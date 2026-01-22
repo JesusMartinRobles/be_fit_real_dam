@@ -28,7 +28,7 @@ class LoginScreen extends StatelessWidget {
       // Uso un Container porque el Scaffold no tiene propiedad directa para imagen de fondo.
       body: Container(
         decoration: BoxDecoration(
-          // Aquí cargo tu imagen 'fondo_bfr.png'
+          // Aquí cargo la imagen 'fondo_bfr.png'
           image: DecorationImage(
             image: const AssetImage('assets/images/fondo_bfr.png'),
             fit: BoxFit.cover, // "Cover" significa: estírate hasta cubrir todo, aunque te cortes.

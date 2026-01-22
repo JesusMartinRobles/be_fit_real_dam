@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190297798679",
+    "project_id": "be-fit-real",
+    "storage_bucket": "be-fit-real.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190297798679:android:fccb80a0725748d7538452",
+        "android_client_info": {
+          "package_name": "com.example.be_fit_real"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5M-6y8m408fOpL8SHqw0e8MlYn3eBDKo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
