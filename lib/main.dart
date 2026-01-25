@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 // Importamos nuestros paquetes (como los 'import' de Java)
 import 'config/theme.dart'; 
@@ -7,7 +8,9 @@ import 'screens/login_screen.dart';
 // FUNCIÓN MAIN:
 // CONCEPTOS JAVA: public static void main(String[] args)
 // Es donde arranca el programa.
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   // runApp() toma el widget raíz y lo "pega" en la pantalla del móvil.
   runApp(const BeFitRealApp());
 }
