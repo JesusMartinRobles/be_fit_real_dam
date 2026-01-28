@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 // Importo mis propios archivos:
 import '../services/auth_service.dart'; // La clase que habla con Firebase (el "Back")
 import 'home_screen.dart'; // La pantalla a la que iré si todo sale bien
+import 'register_screen.dart';
 
 // NOTA PARA MÍ:
 // He cambiado de StatelessWidget a StatefulWidget.
@@ -84,9 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      // IMPORTANTE: Pongo esto a false para que el fondo de pantalla
-      // NO se achuche ni se deforme cuando suba el teclado virtual.
-      resizeToAvoidBottomInset: false,
       
       body: Container(
         // FONDO: Uso un Container con decoración para poner la imagen.
@@ -193,7 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Botón Registro (Solo navegación por ahora)
                     OutlinedButton(
                       onPressed: () {
-                        // TODO: Crear pantalla de registro
+                        // NAVEGACIÓN: Ir a la pantalla de registro
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: primaryColor, width: 2),

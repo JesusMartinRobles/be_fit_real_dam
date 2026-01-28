@@ -25,6 +25,22 @@ class AuthService {
     }
   }
 
+  // MÉTODO: Registrar Nuevo Usuario
+  // Recibe email y contraseña y crea la cuenta en Firebase.
+  Future<String?> register({required String email, required String password}) async {
+    try {
+      await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return null; // Null significa "Todo perfecto, usuario creado"
+    } on FirebaseAuthException catch (e) {
+      return e.message; // Devolvemos el error (ej: "Email ya en uso")
+    } catch (e) {
+      return "Error desconocido al registrarse.";
+    }
+  }
+
   // MÉTODO: Cerrar Sesión
   Future<void> logout() async {
     await _auth.signOut();
