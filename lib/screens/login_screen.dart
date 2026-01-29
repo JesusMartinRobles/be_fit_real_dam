@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // ZONA SEGURA: Evita que el notch o la batería tapen mi contenido.
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
             child: Center(
               // SCROLL: Necesario por si la pantalla es pequeña.
               child: SingleChildScrollView(
@@ -188,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Botón Registro (Solo navegación por ahora)
+                    // Botón Registro
                     OutlinedButton(
                       onPressed: () {
                         // NAVEGACIÓN: Ir a la pantalla de registro

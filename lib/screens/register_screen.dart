@@ -121,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
