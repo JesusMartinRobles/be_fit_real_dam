@@ -2,10 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_screen.dart'; // Para cerrar sesión
 import 'routine_form_screen.dart'; // El formulario de rutina
+import 'admin_screen.dart'; // <--- IMPORTANTE: La pantalla de Admin que crearemos luego
 import '../services/auth_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  
+  // NOTA PARA MÍ:
+  // Esta variable simula si el usuario es Admin.
+  // MÁS ADELANTE: Esto vendrá de la base de datos de Firebase.
+  // Por ahora lo pongo en 'false' para poder programar la pantalla.
+  bool _isAdmin = true; 
 
   // Método para cerrar sesión
   void _logout(BuildContext context) async {
@@ -62,10 +75,9 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
-                // --- BOTONES DEL MENÚ ---
-                // Uso Expanded para que ocupen el espacio disponible
+                // --- MENÚ PRINCIPAL ---
                 
-                // 1. GENERAR RUTINA (El más grande e importante)
+                // 1. GENERAR RUTINA
                 _buildMenuCard(
                   context,
                   title: "GENERAR NUEVA RUTINA",
@@ -73,7 +85,6 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.auto_awesome,
                   color: primaryColor,
                   onTap: () {
-                    // Navegamos al formulario
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const RoutineFormScreen()),
                     );
@@ -90,7 +101,6 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.history,
                   color: Colors.white,
                   onTap: () {
-                    // TODO: Ir a historial
                     debugPrint("Ir a historial");
                   },
                 ),
@@ -105,16 +115,57 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.person_outline,
                   color: Colors.white,
                   onTap: () {
-                    // TODO: Ir a perfil
                     debugPrint("Ir a perfil");
                   },
                 ),
                 
                 const Spacer(),
+
+                // --- ZONA ADMIN (SOLO VISIBLE SI _isAdmin es true) ---
+                if (_isAdmin) ...[
+                  const Divider(color: Colors.white24), // Línea separadora
+                  const SizedBox(height: 10),
+                  
+                  // Botón especial de Admin
+                  InkWell(
+                    onTap: () {
+                      // NAVEGACIÓN: Ir al Panel de Admin
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AdminScreen()),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withAlpha(30), // Fondo rojizo para destacar
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withAlpha(100)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.security, color: Colors.redAccent),
+                          const SizedBox(width: 10),
+                          Text(
+                            "PANEL DE ADMINISTRADOR",
+                            style: GoogleFonts.teko(
+                              color: Colors.redAccent, 
+                              fontSize: 20, 
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 
-                // Logo pequeño abajo para marca
+                // Logo pequeño marca de agua
                 Center(
-                  child: Image.asset('assets/images/logo_white.png', height: 40, color: Colors.white38),
+                  child: Image.asset('assets/images/logo_white.png', height: 30, color: Colors.white38),
                 ),
               ],
             ),
@@ -138,23 +189,21 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20), // Fondo cristal muy sutil
+          color: Colors.white.withAlpha(20),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withAlpha(30)),
         ),
         child: Row(
           children: [
-            // Icono grande
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withAlpha(30), // Fondo del icono tintado
+                color: color.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 30),
             ),
             const SizedBox(width: 20),
-            // Textos
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,8 +213,7 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // Flechita
-            Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
           ],
         ),
       ),
