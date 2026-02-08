@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_screen.dart'; // Para cerrar sesión
 import 'routine_form_screen.dart'; // El formulario de rutina
-import 'admin_screen.dart'; // <--- IMPORTANTE: La pantalla de Admin que crearemos luego
+import 'admin_screen.dart'; //La pantalla de Admin
 import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {

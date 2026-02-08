@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+// Importo las pantallas a las que voy a navegar
+import 'materials_admin_screen.dart';
 
 // PANTALLA DE ADMINISTRACIÓN
-// Aquí es donde gestionaré los datos de la app (Ejercicios, Materiales, Usuarios).
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
 
@@ -15,7 +16,6 @@ class AdminScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Botón atrás blanco para volver al Home
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
@@ -26,13 +26,12 @@ class AdminScreen extends StatelessWidget {
       ),
       
       body: Container(
-        // FONDO (Mismo que el resto de la app)
         decoration: BoxDecoration(
           image: DecorationImage(
             image: const AssetImage('assets/images/fondo_bfr.png'),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              Colors.black.withAlpha(180), // Un poco más oscuro para seriedad
+              Colors.black.withAlpha(180), 
               BlendMode.darken,
             ),
           ),
@@ -40,81 +39,66 @@ class AdminScreen extends StatelessWidget {
         
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 
-                // TÍTULO DE BIENVENIDA
-                Text(
-                  "GESTIÓN GLOBAL",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.teko(
-                    fontSize: 40, 
-                    fontWeight: FontWeight.bold, 
-                    color: primaryColor
-                  ),
+                // CABECERA
+                Text("GESTIÓN GLOBAL", textAlign: TextAlign.center,
+                  style: GoogleFonts.teko(fontSize: 40, fontWeight: FontWeight.bold, color: primaryColor)),
+                Text("ADMINISTRACIÓN DEL SISTEMA", textAlign: TextAlign.center,
+                  style: GoogleFonts.teko(fontSize: 22, color: Colors.white70)),
+
+                const SizedBox(height: 50),
+
+                // LISTA VERTICAL DE BOTONES
+                // Al usar Column con crossAxisAlignment.stretch, ocupan todo el ancho.
+                
+                // 1. MATERIALES (El más importante ahora)
+                _buildAdminButton(
+                  icon: Icons.construction, 
+                  title: "GESTIONAR MATERIALES",
+                  subtitle: "Añadir o eliminar equipamiento del club",
+                  color: Colors.cyanAccent,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MaterialsAdminScreen()),
+                    );
+                  },
                 ),
-                Text(
-                  "SELECCIONA UNA CATEGORÍA",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.teko(
-                    fontSize: 20, 
-                    color: Colors.white70
-                  ),
+
+                const SizedBox(height: 20),
+
+                // 2. USUARIOS
+                _buildAdminButton(
+                  icon: Icons.group,
+                  title: "GESTIONAR USUARIOS",
+                  subtitle: "Ver usuarios registrados y baneos",
+                  color: Colors.orangeAccent,
+                  onTap: () {
+                    debugPrint("Ir a gestión de usuarios");
+                  },
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
-                // GRILLA DE BOTONES (2 Columnas)
-                // Uso Expanded para que la rejilla ocupe el espacio restante.
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 2, // 2 columnas
-                    crossAxisSpacing: 16, // Espacio horizontal entre botones
-                    mainAxisSpacing: 16, // Espacio vertical entre botones
-                    children: [
-                      // 1. EJERCICIOS
-                      _buildAdminCard(
-                        icon: Icons.fitness_center,
-                        title: "EJERCICIOS",
-                        color: primaryColor,
-                        onTap: () {
-                          debugPrint("Ir a gestión de ejercicios");
-                        },
-                      ),
-
-                      // 2. MATERIALES
-                      _buildAdminCard(
-                        icon: Icons.construction, // O dumbbell
-                        title: "MATERIALES",
-                        color: Colors.cyanAccent, // Color distinto para diferenciar
-                        onTap: () {
-                          debugPrint("Ir a gestión de materiales");
-                        },
-                      ),
-
-                      // 3. USUARIOS
-                      _buildAdminCard(
-                        icon: Icons.group,
-                        title: "USUARIOS",
-                        color: Colors.orangeAccent,
-                        onTap: () {
-                          debugPrint("Ir a gestión de usuarios");
-                        },
-                      ),
-
-                      // 4. CÓDIGOS INVITACIÓN
-                      _buildAdminCard(
-                        icon: Icons.vpn_key,
-                        title: "CÓDIGOS",
-                        color: Colors.purpleAccent,
-                        onTap: () {
-                          debugPrint("Ir a gestión de códigos");
-                        },
-                      ),
-                    ],
-                  ),
+                // 3. CÓDIGOS DE INVITACIÓN
+                _buildAdminButton(
+                  icon: Icons.vpn_key,
+                  title: "CÓDIGOS DE ACCESO",
+                  subtitle: "Crear claves para nuevos miembros",
+                  color: Colors.purpleAccent,
+                  onTap: () {
+                    debugPrint("Ir a gestión de códigos");
+                  },
+                ),
+                
+                const Spacer(),
+                
+                // Marca de agua
+                Center(
+                  child: Icon(Icons.security, size: 40, color: Colors.white10),
                 ),
               ],
             ),
@@ -124,44 +108,73 @@ class AdminScreen extends StatelessWidget {
     );
   }
 
-  // WIDGET AUXILIAR: TARJETA DE ADMINISTRACIÓN
-  // Crea un botón cuadrado grande con icono y texto.
-  Widget _buildAdminCard({
+  // WIDGET AUXILIAR: BOTÓN ADMIN ANCHO
+  // He rediseñado esto para que sea una fila (Row) en lugar de una columna.
+  Widget _buildAdminButton({
     required IconData icon, 
     required String title, 
+    required String subtitle,
     required Color color, 
     required VoidCallback onTap
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(25), // Fondo Cristal
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withAlpha(100), width: 2), // Borde del color de la sección
+          color: Colors.white.withAlpha(20), // Fondo Cristal
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withAlpha(100), width: 1),
           boxShadow: [
-            // Pequeño resplandor del color de la sección
             BoxShadow(
-              color: color.withAlpha(30),
-              blurRadius: 10,
-              spreadRadius: 2,
+              color: color.withAlpha(20),
+              blurRadius: 15,
+              spreadRadius: -5,
             )
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            Icon(icon, size: 50, color: color), // Icono grande
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: GoogleFonts.teko(
-                fontSize: 24, 
-                fontWeight: FontWeight.bold, 
-                color: Colors.white
+            // Icono a la izquierda con fondo tintado
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withAlpha(30),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 32, color: color),
+            ),
+            const SizedBox(width: 20),
+            
+            // Textos en el centro
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.teko(
+                      fontSize: 24, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white,
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
+            
+            // Flecha a la derecha
+            Icon(Icons.arrow_forward_ios, color: color.withAlpha(150), size: 18),
           ],
         ),
       ),

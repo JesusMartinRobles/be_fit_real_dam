@@ -1,13 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // <--- IMPORTACIÓN NUEVA
-import '../models/user_model.dart'; // Importo mi molde de usuario
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Instancia de la Base de Datos
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // LOGIN (Igual que antes)
+  // LOGIN
   Future<String?> login({required String email, required String password}) async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -16,29 +15,24 @@ class AuthService {
       );
       return null;
     } on FirebaseAuthException catch (e) {
-      return e.message;
+      return _mapFirebaseError(e.code);
     } catch (e) {
-      return "Error desconocido en login.";
+      // Si el error no es de Firebase (ej: error de programación), devolvemos esto
+      return "Error desconocido: ${e.toString()}";
     }
   }
 
-  // REGISTRO (¡MEJORADO!)
-  // Ahora, además de crear la cuenta, guarda la ficha en la base de datos.
+  // REGISTRO
   Future<String?> register({required String email, required String password}) async {
     try {
-      // 1. Crear el usuario en el sistema de autenticación (Google)
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
 
-      // Si llegamos aquí, el usuario se creó bien. Ahora guardamos sus datos.
       User? user = result.user;
 
       if (user != null) {
-        // 2. Crear mi objeto "Ficha de Usuario"
-        // Por defecto, todos nacen con el rol 'user'.
-        // Tú luego cambiarás el tuyo a 'admin' manualmente en la consola.
         UserModel newUser = UserModel(
           uid: user.uid,
           email: email.trim(),
@@ -46,24 +40,52 @@ class AuthService {
           createdAt: DateTime.now(),
         );
 
-        // 3. Guardar la ficha en la colección 'users' de Firestore
-        // Uso .set() para crear el documento con el mismo ID que el usuario.
         await _db.collection('users').doc(user.uid).set(newUser.toMap());
       }
 
-      return null; // Todo perfecto
+      return null;
     } on FirebaseAuthException catch (e) {
-      return e.message;
+      return _mapFirebaseError(e.code);
     } catch (e) {
-      return "Error al guardar datos en Firestore: $e";
+      return "Error al crear usuario: ${e.toString()}";
     }
   }
 
-  // LOGOUT
   Future<void> logout() async {
     await _auth.signOut();
   }
   
-  // OBTENER USUARIO ACTUAL
   User? get currentUser => _auth.currentUser;
+
+  // ------------------------------------------------------------------
+  // EL DICCIONARIO DE ERRORES (Actualizado 2025)
+  // ------------------------------------------------------------------
+  String _mapFirebaseError(String code) {
+    switch (code) {
+      // Errores de Login
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential': // <--- ¡NUEVO! Google ahora usa este para todo
+        return 'Credenciales incorrectas (Email o contraseña mal).';
+      
+      // Errores de Registro
+      case 'email-already-in-use':
+        return 'Este correo ya está registrado.';
+      case 'invalid-email':
+        return 'El formato del correo no es válido.';
+      case 'weak-password':
+        return 'La contraseña es muy débil (mínimo 6 caracteres).';
+      
+      // Errores Técnicos
+      case 'network-request-failed':
+        return 'Sin conexión a internet.';
+      case 'channel-error': // <--- El error raro que te salía
+        return 'Por favor, rellena todos los campos.'; 
+      case 'too-many-requests':
+        return 'Demasiados intentos. Espera unos minutos.';
+        
+      default:
+        return 'Error del servidor: $code';
+    }
+  }
 }
