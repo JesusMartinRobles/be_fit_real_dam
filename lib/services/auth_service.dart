@@ -23,8 +23,27 @@ class AuthService {
   }
 
   // REGISTRO
-  Future<String?> register({required String email, required String password}) async {
+  // REGISTRO CON VERIFICACIÓN DE CÓDIGO
+  Future<String?> register({
+    required String email, 
+    required String password, 
+    required String inviteCode // <--- AHORA PEDIMOS EL CÓDIGO AQUÍ
+  }) async {
     try {
+      // 1. VERIFICAR CÓDIGO DE INVITACIÓN (SEGURIDAD)
+      // Buscamos en la colección 'invite_codes' si existe este código y si está activo.
+      final codeSnapshot = await _db.collection('invite_codes')
+          .where('code', isEqualTo: inviteCode) // Busca el texto exacto
+          .where('isActive', isEqualTo: true)   // Que no esté caducado
+          .limit(1) // Solo necesito encontrar uno
+          .get();
+
+      // Si la lista está vacía, el código es falso o antiguo.
+      if (codeSnapshot.docs.isEmpty) {
+        return "El código de invitación no es válido o ha caducado.";
+      }
+
+      // 2. Si el código es bueno, procedemos a crear el usuario en Google
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
@@ -33,6 +52,7 @@ class AuthService {
       User? user = result.user;
 
       if (user != null) {
+        // 3. Crear la ficha del usuario
         UserModel newUser = UserModel(
           uid: user.uid,
           email: email.trim(),
@@ -43,11 +63,11 @@ class AuthService {
         await _db.collection('users').doc(user.uid).set(newUser.toMap());
       }
 
-      return null;
+      return null; // Éxito
     } on FirebaseAuthException catch (e) {
       return _mapFirebaseError(e.code);
     } catch (e) {
-      return "Error al crear usuario: ${e.toString()}";
+      return "Error al procesar el registro: $e";
     }
   }
 

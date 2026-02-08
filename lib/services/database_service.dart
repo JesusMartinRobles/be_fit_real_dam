@@ -1,43 +1,58 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/material_model.dart'; // Importo mi nuevo modelo
+import '../models/material_model.dart';
+import '../models/invite_code_model.dart'; // <--- IMPORTACIÓN NUEVA
 
-// CLASE DATABASE SERVICE
-// Se encarga de hablar con Firestore.
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   
-  // Nombre de la colección en la nube
   final String _materialsCollection = 'materials';
+  final String _codesCollection = 'invite_codes'; // Nueva colección
 
-  // 1. AÑADIR MATERIAL (CREATE)
+  // --- MATERIALES (Ya lo tenías, lo dejo igual) ---
   Future<void> addMaterial(String name) async {
+    await _db.collection(_materialsCollection).add({'name': name});
+  }
+
+  Stream<List<MaterialModel>> getMaterials() {
+    return _db.collection(_materialsCollection).orderBy('name').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => MaterialModel.fromMap(doc.data(), doc.id)).toList();
+    });
+  }
+
+  Future<void> deleteMaterial(String materialId) async {
+    await _db.collection(_materialsCollection).doc(materialId).delete();
+  }
+
+  // --- CÓDIGOS DE INVITACIÓN (NUEVO) ---
+
+  // 1. AÑADIR CÓDIGO
+  Future<void> addInviteCode(String code) async {
     try {
-      // Creo un documento nuevo con ID automático
-      await _db.collection(_materialsCollection).add({
-        'name': name,
-        // Podríamos añadir 'createdAt' si quisiéramos ordenar por fecha
+      await _db.collection(_codesCollection).add({
+        'code': code,
+        'isActive': true, // Por defecto nace activo
+        'createdAt': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print("Error al añadir material: $e");
+      print("Error al crear código: $e");
       throw e;
     }
   }
 
-  // 2. LEER MATERIALES (READ - STREAM)
-  // Devuelve una lista viva que se actualiza sola.
-  Stream<List<MaterialModel>> getMaterials() {
-    return _db.collection(_materialsCollection)
-      .orderBy('name') // Ordenados alfabéticamente
+  // 2. LEER CÓDIGOS
+  Stream<List<InviteCodeModel>> getInviteCodes() {
+    return _db.collection(_codesCollection)
+      .orderBy('createdAt', descending: true) // Los más nuevos primero
       .snapshots()
       .map((snapshot) {
         return snapshot.docs.map((doc) {
-          return MaterialModel.fromMap(doc.data(), doc.id);
+          return InviteCodeModel.fromMap(doc.data(), doc.id);
         }).toList();
       });
   }
 
-  // 3. BORRAR MATERIAL (DELETE)
-  Future<void> deleteMaterial(String materialId) async {
-    await _db.collection(_materialsCollection).doc(materialId).delete();
+  // 3. BORRAR CÓDIGO
+  Future<void> deleteInviteCode(String id) async {
+    await _db.collection(_codesCollection).doc(id).delete();
   }
 }

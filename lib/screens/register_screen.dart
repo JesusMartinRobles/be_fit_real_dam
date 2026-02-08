@@ -20,18 +20,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   final _authService = AuthService();
 
-  void _attemptRegister() async {
-    // 1. VALIDACIÓN DE VACÍOS (Nueva defensa)
+void _attemptRegister() async {
+    // 1. VALIDACIONES LOCALES
     if (_emailController.text.trim().isEmpty || 
         _passwordController.text.trim().isEmpty || 
-        _confirmPasswordController.text.trim().isEmpty) {
+        _confirmPasswordController.text.trim().isEmpty ||
+        _inviteCodeController.text.trim().isEmpty) { // <--- AHORA EL CÓDIGO ES OBLIGATORIO
       if (mounted) {
         showBeFitSnackBar(context, "RELLENA TODOS LOS CAMPOS");
       }
       return;
     }
 
-    // 2. VALIDACIÓN DE CONTRASEÑAS
     if (_passwordController.text != _confirmPasswordController.text) {
       if (mounted) {
         showBeFitSnackBar(context, "LAS CONTRASEÑAS NO COINCIDEN");
@@ -41,9 +41,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     
+    // 2. LLAMADA AL SERVICIO
     final error = await _authService.register(
       email: _emailController.text,
       password: _passwordController.text,
+      inviteCode: _inviteCodeController.text.trim().toUpperCase(), // <--- PASAMOS EL CÓDIGO (En mayúsculas por si acaso)
     );
     
     if (mounted) setState(() => _isLoading = false);

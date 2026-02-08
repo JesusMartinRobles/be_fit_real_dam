@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 // Importo las pantallas a las que voy a navegar
 import 'materials_admin_screen.dart';
+import 'invite_codes_screen.dart';
 
 // PANTALLA DE ADMINISTRACIÓN
 class AdminScreen extends StatelessWidget {
@@ -90,7 +91,10 @@ class AdminScreen extends StatelessWidget {
                   subtitle: "Crear claves para nuevos miembros",
                   color: Colors.purpleAccent,
                   onTap: () {
-                    debugPrint("Ir a gestión de códigos");
+                    // NAVEGACIÓN A LA PANTALLA DE CÓDIGOS
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const InviteCodesScreen()),
+                    );
                   },
                 ),
                 
