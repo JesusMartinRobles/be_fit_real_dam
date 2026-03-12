@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/custom_widgets.dart'; // Importo mis piezas de Lego
+
+// --- IMPORTACIONES DE ARQUITECTURA ---
+import '../widgets/custom_widgets.dart'; // Componentes visuales reutilizables (DRY)
+import '../services/database_service.dart'; // Servicio para hablar con Firebase
+import '../models/material_model.dart'; // Molde de los datos
 
 class RoutineFormScreen extends StatefulWidget {
   const RoutineFormScreen({super.key});
@@ -10,27 +14,24 @@ class RoutineFormScreen extends StatefulWidget {
 }
 
 class _RoutineFormScreenState extends State<RoutineFormScreen> {
-  // 1. MEMORIA (ESTADO)
-  
-  // Para los materiales, uso una LISTA porque el usuario puede elegir varios.
+  // 1. SERVICIOS
+  // Instanciamos el servicio de base de datos para no mezclar lógica de red con UI.
+  final DatabaseService _dbService = DatabaseService();
+
+  // 2. GESTIÓN DEL ESTADO (STATE)
+  // Utilizamos una Lista para los materiales porque es una relación N:M (El usuario puede tener varios)
   List<String> _selectedMaterials = [];
   
-  // Para las opciones únicas (Objetivo, Enfoque), uso un String simple.
+  // Variables simples (String) para selecciones únicas
   String? _selectedGoal;
   String? _selectedFocus;
 
-  // Para los campos donde el usuario escribe libremente, uso Controladores.
+  // Controladores para capturar el texto libre introducido por el usuario
   final _timeController = TextEditingController();
   final _injuriesController = TextEditingController();
 
-  // 2. DATOS DE LOS MENÚS
-  // Defino aquí las opciones que salen en los desplegables.
-  
-  final List<String> _materialsList = [
-    "Gimnasio Completo", "Mancuernas", "Barra y Discos",
-    "Barra de Dominadas", "Bandas Elásticas", "Peso Corporal", "Kettlebells"
-  ];
-
+  // 3. DATOS ESTÁTICOS
+  // Opciones predefinidas que no requieren base de datos por ser estructurales de la app
   final List<String> _goalsList = [
     "Fuerza e Hipertrofia", "Pérdida de Grasa", "Resistencia", "Rehabilitación"
   ];
@@ -51,13 +52,14 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(), // Volver al menú
+          onPressed: () => Navigator.of(context).pop(), 
         ),
         title: Text("CONFIGURAR SESIÓN", 
           style: GoogleFonts.teko(color: Colors.white, fontSize: 28)),
         centerTitle: true,
       ),
       body: Container(
+        // FONDO: Implementación del patrón Glassmorphism
         decoration: BoxDecoration(
           image: DecorationImage(
             image: const AssetImage('assets/images/fondo_bfr.png'),
@@ -90,39 +92,88 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
 
                     const SizedBox(height: 20),
 
-                    // --- CAMPO 2: MATERIAL (ESPECIAL) ---
-                    // Este no usa GlassDropdown porque necesita lógica Multi-Select (InkWell + Diálogo).
+                    // --- CAMPO 2: MATERIAL (CONEXIÓN A BACKEND) ---
+                    // ARGUMENTO DE DEFENSA: 
+                    // "Aquí usamos un StreamBuilder. Esto abre un canal de datos asíncrono 
+                    // con Firestore. Si el Admin añade un material nuevo en la base de datos, 
+                    // esta lista se actualiza en el dispositivo del usuario en tiempo real."
                     const BeFitLabel("MATERIAL DISPONIBLE"),
                     const SizedBox(height: 5),
-                    InkWell(
-                      onTap: _showMultiSelectDialog,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(25),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withAlpha(30)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.fitness_center, color: Colors.white70),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Text(
-                                _selectedMaterials.isEmpty 
-                                  ? "Selecciona equipamiento..."
-                                  : _selectedMaterials.join(", "),
-                                style: GoogleFonts.teko(
-                                  color: _selectedMaterials.isEmpty ? Colors.white38 : Colors.white,
-                                  fontSize: 20, fontWeight: FontWeight.w400
-                                ),
-                                maxLines: 1, overflow: TextOverflow.ellipsis,
-                              ),
+                    
+                    StreamBuilder<List<MaterialModel>>(
+                      stream: _dbService.getMaterials(),
+                      builder: (context, snapshot) {
+                        
+                        // Control de Errores (Ej: Reglas de seguridad de Firebase fallan)
+                        if (snapshot.hasError) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withAlpha(30), 
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.redAccent.withAlpha(100))
                             ),
-                            const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                          ],
-                        ),
-                      ),
+                            child: const Text(
+                              "Error de conexión con la base de datos.", 
+                              style: TextStyle(color: Colors.redAccent, fontSize: 14),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+
+                        // Estado de carga inicial
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(color: Colors.white.withAlpha(25), borderRadius: BorderRadius.circular(12)),
+                            child: const Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        // Validación: Base de datos vacía
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(color: Colors.white.withAlpha(25), borderRadius: BorderRadius.circular(12)),
+                            child: const Text("El administrador no ha añadido materiales.", style: TextStyle(color: Colors.white54)),
+                          );
+                        }
+
+                        // Mapeo: Extraemos solo los nombres (Strings) del modelo para pasarlos a la UI
+                        final availableMaterialNames = snapshot.data!.map((m) => m.name).toList();
+
+                        // Renderizado del botón dinámico
+                        return InkWell(
+                          onTap: () => _showMultiSelectDialog(availableMaterialNames),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(25),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withAlpha(30)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.fitness_center, color: Colors.white70),
+                                const SizedBox(width: 15),
+                                Expanded(
+                                  child: Text(
+                                    _selectedMaterials.isEmpty 
+                                      ? "Selecciona equipamiento..."
+                                      : _selectedMaterials.join(", "),
+                                    style: GoogleFonts.teko(
+                                      color: _selectedMaterials.isEmpty ? Colors.white38 : Colors.white,
+                                      fontSize: 20, fontWeight: FontWeight.w400
+                                    ),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                     ),
 
                     const SizedBox(height: 20),
@@ -132,7 +183,7 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
                     const SizedBox(height: 5),
                     GlassTextField(
                       controller: _timeController,
-                      hint: "Ej: 40",
+                      hint: "Ej: 40", // Valor recomendado por defecto
                       icon: Icons.timer,
                       keyboardType: TextInputType.number,
                     ),
@@ -157,19 +208,31 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
                     const SizedBox(height: 5),
                     GlassTextField(
                       controller: _injuriesController,
-                      hint: "Ej: Menisco, Muñeca...",
+                      hint: "Ej: Menisco, Muñeca derecha...", // Ejemplos muy personalizados
                       icon: Icons.healing,
                     ),
 
                     const SizedBox(height: 40),
 
-                    // BOTÓN GENERAR
+                    // --- BOTÓN DE ENVÍO Y VALIDACIÓN ---
                     ElevatedButton(
                       onPressed: () {
-                        // TODO: Aquí llamaremos a Gemini AI
+                        // VALIDACIÓN LOCAL: Evitamos llamadas innecesarias a la IA si faltan datos
+                        if (_selectedFocus == null || _selectedGoal == null || _timeController.text.isEmpty || _selectedMaterials.isEmpty) {
+                          showBeFitSnackBar(context, "Por favor, rellena todos los campos obligatorios.");
+                          return;
+                        }
+
+                        // TODO: Integración futura con la API de Gemini
+                        showBeFitSnackBar(context, "¡Conectando con la IA...!", isError: false);
+                        
+                        // Debugging por consola para verificar la captura de datos
+                        debugPrint("DATOS CAPTURADOS PARA LA IA:");
                         debugPrint("Enfoque: $_selectedFocus");
                         debugPrint("Material: $_selectedMaterials");
                         debugPrint("Tiempo: ${_timeController.text}");
+                        debugPrint("Objetivo: $_selectedGoal");
+                        debugPrint("Molestias: ${_injuriesController.text}");
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
@@ -191,42 +254,89 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
     );
   }
 
-  // DIÁLOGO MULTI-SELECCIÓN (Lógica específica de esta pantalla)
-  void _showMultiSelectDialog() async {
+  // MÉTODO CONTROLADOR DEL DIÁLOGO
+  // Abre el widget separado y espera el resultado asíncrono (await)
+  void _showMultiSelectDialog(List<String> materials) async {
     final List<String>? results = await showDialog(
       context: context,
       builder: (BuildContext context) {
         return _MultiSelectDialog(
-          items: _materialsList,
+          items: materials, 
           initialSelectedItems: _selectedMaterials,
           primaryColor: Theme.of(context).primaryColor,
         );
       },
     );
+    // Actualizamos el estado de la pantalla principal si el usuario aceptó
     if (results != null) setState(() => _selectedMaterials = results);
   }
 }
 
-// Widget privado para el diálogo de selección múltiple (Checkboxes)
+// ==============================================================================
+// WIDGET PRIVADO: DIÁLOGO MULTI-SELECCIÓN
+// ARGUMENTO DE DEFENSA: "He extraído el diálogo a un StatefulWidget privado. 
+// Es necesario porque los Checkboxes necesitan mantener su propio estado (marcado/desmarcado) 
+// internamente antes de devolver el resultado final a la pantalla principal."
+// ==============================================================================
 class _MultiSelectDialog extends StatefulWidget {
-  final List<String> items; final List<String> initialSelectedItems; final Color primaryColor;
+  final List<String> items; 
+  final List<String> initialSelectedItems; 
+  final Color primaryColor;
+  
   const _MultiSelectDialog({required this.items, required this.initialSelectedItems, required this.primaryColor});
-  @override State<_MultiSelectDialog> createState() => _MultiSelectDialogState();
+  
+  @override 
+  State<_MultiSelectDialog> createState() => _MultiSelectDialogState();
 }
 
 class _MultiSelectDialogState extends State<_MultiSelectDialog> {
+  // Lista temporal para no modificar la real hasta que el usuario pulse "Aceptar"
   late List<String> _tempSelectedItems;
-  @override void initState() { super.initState(); _tempSelectedItems = List.from(widget.initialSelectedItems); }
-  @override Widget build(BuildContext context) {
+  
+  @override 
+  void initState() { 
+    super.initState(); 
+    _tempSelectedItems = List.from(widget.initialSelectedItems); 
+  }
+  
+  @override 
+  Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFF1E1E1E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: const Color(0xFF1E1E1E), 
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text("SELECCIONA MATERIAL", style: GoogleFonts.teko(color: widget.primaryColor, fontSize: 28, fontWeight: FontWeight.bold)),
-      content: SingleChildScrollView(child: ListBody(children: widget.items.map((item) {
+      content: SingleChildScrollView(
+        child: ListBody(
+          children: widget.items.map((item) {
             final isChecked = _tempSelectedItems.contains(item);
-            return CheckboxListTile(value: isChecked, title: Text(item, style: GoogleFonts.teko(color: Colors.white, fontSize: 20)), activeColor: widget.primaryColor, checkColor: Colors.black, controlAffinity: ListTileControlAffinity.leading, onChanged: (bool? checked) { setState(() { if (checked == true) { _tempSelectedItems.add(item); } else { _tempSelectedItems.remove(item); } }); }); }).toList())),
+            return CheckboxListTile(
+              value: isChecked, 
+              title: Text(item, style: GoogleFonts.teko(color: Colors.white, fontSize: 20)), 
+              activeColor: widget.primaryColor, 
+              checkColor: Colors.black, 
+              controlAffinity: ListTileControlAffinity.leading, 
+              onChanged: (bool? checked) { 
+                setState(() { 
+                  if (checked == true) { 
+                    _tempSelectedItems.add(item); 
+                  } else { 
+                    _tempSelectedItems.remove(item); 
+                  } 
+                }); 
+              }
+            ); 
+          }).toList()
+        )
+      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text("CANCELAR", style: GoogleFonts.teko(color: Colors.white54, fontSize: 20))),
-        TextButton(onPressed: () => Navigator.pop(context, _tempSelectedItems), child: Text("ACEPTAR", style: GoogleFonts.teko(color: widget.primaryColor, fontSize: 20, fontWeight: FontWeight.bold))),
+        TextButton(
+          onPressed: () => Navigator.pop(context), 
+          child: Text("CANCELAR", style: GoogleFonts.teko(color: Colors.white54, fontSize: 20))
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _tempSelectedItems), 
+          child: Text("ACEPTAR", style: GoogleFonts.teko(color: widget.primaryColor, fontSize: 20, fontWeight: FontWeight.bold))
+        ),
       ],
     );
   }
