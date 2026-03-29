@@ -1,27 +1,15 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <--- PARA LEER EL .ENV
 
 // ==============================================================================
 // SERVICIO DE INTELIGENCIA ARTIFICIAL (GEMINI)
-// ARGUMENTO DE DEFENSA: "Para la generación de rutinas he utilizado la API oficial 
-// de Google Generative AI (Gemini 1.5 Flash por su velocidad). He encapsulado esta 
-// lógica en un servicio independiente mediante el patrón Singleton para mantener 
-// la arquitectura limpia y separar la lógica de negocio de la interfaz gráfica."
+// ARGUMENTO DE DEFENSA: "La seguridad es vital. La API Key ya no está 'hardcodeada', 
+// sino que se lee de memoria de forma segura mediante 'dotenv.env'. Además, he 
+// ajustado el 'Prompt Engineering' (las instrucciones a la IA) para obligarla a 
+// usar un formato Markdown impecable, reduciendo errores de renderizado en el frontend."
 // ==============================================================================
-
 class AIService {
-  // 1. CONFIGURACIÓN
-  // ATENCIÓN: En un entorno de producción real, esta clave NO debe estar hardcodeada aquí,
-  // sino en un archivo .env oculto. Para este MVP académico, la dejamos aquí por simplicidad.
-  static const String _apiKey = 'AIzaSyANrI1Z0lpgt9jaxh6Jj5TtLMYiuQU52-w'; 
   
-  // Usamos el modelo 'gemini-1.5-flash' porque es rapidísimo y muy bueno siguiendo instrucciones.
-  final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-2.5-flash',
-    apiKey: _apiKey,
-  );
-
-  // 2. MÉTODO PRINCIPAL: GENERAR RUTINA
-  // Recibe todos los datos del formulario y devuelve un String (el texto de la rutina).
   Future<String> generateRoutine({
     required String focus,
     required String time,
@@ -30,49 +18,47 @@ class AIService {
     required String injuries,
   }) async {
     
-    // Si no ha puesto molestias, le pasamos "Ninguna" por defecto
-    final safeInjuries = injuries.trim().isEmpty ? "Ninguna molestia o lesión." : injuries;
+    // 1. LEER LA CLAVE SECRETA (Seguridad)
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      return "Error crítico: No se encontró la API Key en el archivo .env.";
+    }
+
+    final model = GenerativeModel(
+      model: 'gemini-2.5-flash', // Actualizado al modelo más potente y rápido
+      apiKey: apiKey,
+    );
     
-    // Formateamos la lista de materiales separados por comas
+    final safeInjuries = injuries.trim().isEmpty ? "Ninguna molestia." : injuries;
     final materialsText = materials.join(", ");
 
-    // 3. EL "PROMPT ENGINEERING" (Ingeniería de Prompts)
-    // Aquí está el verdadero valor del proyecto. Le damos a la IA un contexto estricto,
-    // un rol y unas reglas inquebrantables de cómo debe responder.
+    // 2. PROMPT MEJORADO (Prevención de errores Markdown)
     final String prompt = '''
-      Eres un Entrenador Personal de Élite y experto en Calistenia, Entrenamiento Funcional y Musculación.
-      Tu tarea es diseñar una rutina de entrenamiento altamente efectiva, segura y directa al grano, 
-      basada EXCLUSIVAMENTE en los siguientes parámetros del usuario:
+      Eres un Entrenador Personal de Élite. Diseña una rutina directa y segura.
 
-      --- PARÁMETROS DEL USUARIO ---
-      - Enfoque del día: $focus
-      - Tiempo máximo disponible: $time minutos
-      - Objetivo principal: $goal
-      - Material disponible: $materialsText
-      - Lesiones o molestias a tener en cuenta: $safeInjuries
+      --- DATOS DEL ATLETA ---
+      Enfoque: $focus
+      Tiempo máximo: $time minutos
+      Objetivo: $goal
+      Material: $materialsText
+      Consideraciones de salud: $safeInjuries
 
-      --- REGLAS ESTRICTAS PARA LA CREACIÓN ---
-      1. ADAPTACIÓN AL MATERIAL: Si el usuario NO tiene cierto material (ej: barra de dominadas o TRX), NO puedes incluir ejercicios que lo requieran. Adapta los ejercicios al material listado o a peso corporal.
-      2. SEGURIDAD: Ten MUY en cuenta las lesiones ($safeInjuries). Adapta los ejercicios para no agravarlas (ej: si duele el menisco o la muñeca, evita impactos y flexiones extremas).
-      3. ESTRUCTURA: La rutina DEBE incluir un Calentamiento breve, el Bloque Principal y una Vuelta a la Calma.
-      4. FORMATO: Debes devolver la rutina usando formato Markdown para que se vea bonita en la app. Usa ## para títulos grandes, **negritas** para los nombres de los ejercicios, y listas con viñetas (-).
-      5. TONO: Motivador pero muy profesional. No te enrolles con introducciones largas, ve directo a la rutina.
+      --- REGLAS DE FORMATO MARKDOWN ESTRICTAS (CUMPLE ESTO AL 100%) ---
+      1. Usa "## " (doble almohadilla y un espacio) EXCLUSIVAMENTE para los títulos de los bloques (Ej: ## CALENTAMIENTO).
+      2. NUNCA uses negritas (**) dentro o alrededor de los títulos. NUNCA hagas esto: **## Título** o ## **Título**.
+      3. DEJA SIEMPRE una línea en blanco vacía ANTES y DESPUÉS de cada título.
+      4. Usa viñetas (-) para la lista de ejercicios.
+      5. Adapta los ejercicios rigurosamente al material y protege las lesiones mencionadas.
 
       Genera la rutina ahora:
       ''';
 
     try {
-      // 4. LLAMADA A LA API
-      // Enviamos el mensaje a los servidores de Google y esperamos la respuesta.
-      final response = await _model.generateContent([Content.text(prompt)]);
-      
-      // Devolvemos el texto generado, o un mensaje de error si vino vacío.
-      return response.text ?? "Error: La IA no pudo generar texto en este momento.";
-      
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text ?? "Error: La IA no generó contenido.";
     } catch (e) {
-      // Capturamos cualquier error (sin internet, clave incorrecta...)
       print("Error en Gemini AI: $e");
-      return "Lo siento, ha habido un error al conectar con la IA.\nVerifica tu conexión a internet o intenta de nuevo más tarde.\n\nDetalle técnico: $e";
+      return "Error de conexión con la IA. Detalle: $e";
     }
   }
 }

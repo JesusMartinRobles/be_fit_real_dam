@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // --- IMPORTACIONES DE ARQUITECTURA ---
 import '../widgets/custom_widgets.dart'; 
@@ -221,19 +222,17 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
 
                     const SizedBox(height: 40),
 
-                    // --- BOTÓN DE ENVÍO Y VALIDACIÓN ---
+                    // BOTÓN GENERAR
                     ElevatedButton(
                       onPressed: () async {
-                        // VALIDACIÓN LOCAL: Evitamos llamadas innecesarias a la IA si faltan datos
                         if (_selectedFocus == null || _selectedGoal == null || _timeController.text.isEmpty || _selectedMaterials.isEmpty) {
                           showBeFitSnackBar(context, "Por favor, rellena todos los campos obligatorios.");
                           return;
                         }
 
-                        // 1. Avisamos al usuario de que la IA está pensando
                         showBeFitSnackBar(context, "Diseñando tu entrenamiento... (puede tardar unos segundos)", isError: false);
                         
-                        // 2. Llamamos a Gemini y ESPERAMOS (await) la respuesta
+                        // 1. Llamamos a Gemini
                         final result = await _aiService.generateRoutine(
                           focus: _selectedFocus!,
                           time: _timeController.text,
@@ -242,7 +241,17 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
                           injuries: _injuriesController.text,
                         );
 
-                        // 3. Cuando Gemini termine, navegamos a la pantalla de resultados
+                        // 2. GUARDAR EN FIREBASE (PERSISTENCIA)
+                        // Buscamos quién es el usuario actual
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser != null) {
+                          // ¡AQUÍ ESTÁ LA MAGIA QUE GUARDA EN LA BASE DE DATOS!
+                          await _dbService.saveRoutine(currentUser.uid, result, _selectedFocus!);
+                        } else {
+                          print("Error crítico: No hay usuario logueado.");
+                        }
+
+                        // 3. Navegamos a la pantalla de resultados
                         if (mounted) {
                           Navigator.of(context).push(
                             MaterialPageRoute(

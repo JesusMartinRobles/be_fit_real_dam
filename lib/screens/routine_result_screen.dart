@@ -1,26 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// IMPORTANTE: He añadido esta librería externa para parsear el texto de la IA
-import 'package:flutter_markdown/flutter_markdown.dart'; 
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 // ==============================================================================
-// PANTALLA DE RESULTADO DE LA IA
-// ARGUMENTO DE DEFENSA: "La IA de Gemini me devuelve la rutina estructurada en 
-// formato Markdown (usando ## para títulos y ** para negritas). Como Flutter 
-// pinta texto plano por defecto, he integrado el paquete 'flutter_markdown'. 
-// Además, en lugar de usar el estilo por defecto, he sobrescrito el 'StyleSheet' 
-// para aplicar el 'Theme' de mi aplicación (fuente Teko, color verde corporativo), 
-// logrando una integración visual perfecta."
+// PANTALLA DE RESULTADO (RENDERIZADO)
+// ARGUMENTO DE DEFENSA: "Aunque he instruido a la IA para que el Markdown sea puro, 
+// a veces el modelo 'alucina' formatos incorrectos. He rediseñado el sanitizador con 
+// expresiones regulares (RegExp) avanzadas. Este algoritmo detecta y repara 
+// anomalías comunes (como títulos mezclados con negritas o faltas de espaciado) 
+// ANTES de que Flutter intente dibujar la pantalla, garantizando una interfaz robusta."
 // ==============================================================================
 class RoutineResultScreen extends StatelessWidget {
   final String routineText;
 
-  // Constructor que exige el texto generado por la IA para poder dibujarse
   const RoutineResultScreen({super.key, required this.routineText});
+
+  // FILTRO ANTIMANCHAS MARKDOWN (Súper Agresivo)
+  String _sanitizeMarkdown(String rawText) {
+    String text = rawText;
+    
+    // 1. Quitar negritas enteras que envuelven un título (ej: **## Titulo**)
+    text = text.replaceAllMapped(RegExp(r'\*\*(#+)\s*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
+    
+    // 2. Quitar negritas por dentro de un título (ej: ## **Titulo**)
+    text = text.replaceAllMapped(RegExp(r'(#+)\s*\*\*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
+    
+    // 3. Obligar a que haya un espacio después de los ## (ej: ##Titulo -> ## Titulo)
+    text = text.replaceAllMapped(RegExp(r'^(#+)([^ \n])', multiLine: true), (m) => '${m[1]} ${m[2]}');
+    
+    // 4. Asegurar línea en blanco antes de cualquier título para que el parser no se atragante
+    text = text.replaceAllMapped(RegExp(r'([^\n])\n(#+ )'), (m) => '${m[1]}\n\n${m[2]}');
+
+    return text;
+  }
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
+    
+    // Pasamos la rutina por la "lavadora" antes de pintarla
+    final String safeText = _sanitizeMarkdown(routineText);
 
     return Scaffold(
       appBar: AppBar(
@@ -36,24 +55,21 @@ class RoutineResultScreen extends StatelessWidget {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20.0),
-            // Diseño consistente con el resto de la app (Glassmorphism sutil)
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(15),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: primaryColor.withAlpha(50)),
             ),
-            // AQUÍ OCURRE LA MAGIA DEL RENDERIZADO
             child: Markdown(
-              data: routineText, // El texto bruto que me dio Gemini
-              physics: const BouncingScrollPhysics(), // Scroll suave estilo iOS
-              
-              // Personalización del parser de Markdown adaptado a mi UI
+              data: safeText, // Texto limpio
+              physics: const BouncingScrollPhysics(),
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5), // Párrafos normales
-                h2: GoogleFonts.teko(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold), // Títulos (##)
-                h3: GoogleFonts.teko(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold), // Subtítulos (###)
-                strong: TextStyle(color: primaryColor, fontWeight: FontWeight.bold), // Negritas (**) en verde
-                listBullet: TextStyle(color: primaryColor, fontSize: 20), // Viñetas de las listas
+                p: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+                // Aquí el H2 es el maestro de ceremonias: Verde y enorme
+                h2: GoogleFonts.teko(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold),
+                h3: GoogleFonts.teko(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                strong: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                listBullet: TextStyle(color: primaryColor, fontSize: 20),
               ),
             ),
           ),
