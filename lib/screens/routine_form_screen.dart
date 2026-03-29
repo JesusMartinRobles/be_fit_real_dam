@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // --- IMPORTACIONES DE ARQUITECTURA ---
-import '../widgets/custom_widgets.dart'; // Componentes visuales reutilizables (DRY)
-import '../services/database_service.dart'; // Servicio para hablar con Firebase
-import '../models/material_model.dart'; // Molde de los datos
+import '../widgets/custom_widgets.dart'; 
+import '../services/database_service.dart'; 
+import '../models/material_model.dart'; 
+
+// 🟢 NUEVAS IMPORTACIONES: El cerebro de la IA y la pantalla de resultados
+import '../services/ai_service.dart';
+import 'routine_result_screen.dart';
 
 class RoutineFormScreen extends StatefulWidget {
   const RoutineFormScreen({super.key});
@@ -17,6 +21,9 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
   // 1. SERVICIOS
   // Instanciamos el servicio de base de datos para no mezclar lógica de red con UI.
   final DatabaseService _dbService = DatabaseService();
+  
+  // 🟢 Instanciamos nuestro servicio de IA
+  final AIService _aiService = AIService();
 
   // 2. GESTIÓN DEL ESTADO (STATE)
   // Utilizamos una Lista para los materiales porque es una relación N:M (El usuario puede tener varios)
@@ -216,23 +223,33 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
 
                     // --- BOTÓN DE ENVÍO Y VALIDACIÓN ---
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         // VALIDACIÓN LOCAL: Evitamos llamadas innecesarias a la IA si faltan datos
                         if (_selectedFocus == null || _selectedGoal == null || _timeController.text.isEmpty || _selectedMaterials.isEmpty) {
                           showBeFitSnackBar(context, "Por favor, rellena todos los campos obligatorios.");
                           return;
                         }
 
-                        // TODO: Integración futura con la API de Gemini
-                        showBeFitSnackBar(context, "¡Conectando con la IA...!", isError: false);
+                        // 1. Avisamos al usuario de que la IA está pensando
+                        showBeFitSnackBar(context, "Diseñando tu entrenamiento... (puede tardar unos segundos)", isError: false);
                         
-                        // Debugging por consola para verificar la captura de datos
-                        debugPrint("DATOS CAPTURADOS PARA LA IA:");
-                        debugPrint("Enfoque: $_selectedFocus");
-                        debugPrint("Material: $_selectedMaterials");
-                        debugPrint("Tiempo: ${_timeController.text}");
-                        debugPrint("Objetivo: $_selectedGoal");
-                        debugPrint("Molestias: ${_injuriesController.text}");
+                        // 2. Llamamos a Gemini y ESPERAMOS (await) la respuesta
+                        final result = await _aiService.generateRoutine(
+                          focus: _selectedFocus!,
+                          time: _timeController.text,
+                          materials: _selectedMaterials,
+                          goal: _selectedGoal!,
+                          injuries: _injuriesController.text,
+                        );
+
+                        // 3. Cuando Gemini termine, navegamos a la pantalla de resultados
+                        if (mounted) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => RoutineResultScreen(routineText: result),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,

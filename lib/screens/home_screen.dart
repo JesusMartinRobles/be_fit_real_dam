@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'login_screen.dart'; // Para cerrar sesión
-import 'routine_form_screen.dart'; // El formulario de rutina
-import 'admin_screen.dart'; //La pantalla de Admin
+// Importaciones de Firebase para la seguridad de rutas
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:firebase_auth/firebase_auth.dart'; 
+
+import 'login_screen.dart'; 
+import 'routine_form_screen.dart'; 
+import 'admin_screen.dart'; 
+import 'history_screen.dart'; 
+import 'profile_screen.dart'; 
 import '../services/auth_service.dart';
 
+// ==============================================================================
+// PANEL PRINCIPAL (HOME SCREEN)
+// ARGUMENTO DE DEFENSA: "Esta es la pantalla central (Hub) de la app. Para 
+// gestionar el botón de Administración he implementado una comprobación de 
+// seguridad asíncrona. En el 'initState', la app hace una petición a Firestore 
+// para leer el documento del usuario logueado. Solo si el campo 'role' es 
+// estrictamente igual a 'admin', se actualiza el estado y se renderiza el botón. 
+// Esto evita que usuarios estándar inyecten código para ver el panel."
+// ==============================================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,14 +28,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  
-  // NOTA PARA MÍ:
-  // Esta variable simula si el usuario es Admin.
-  // MÁS ADELANTE: Esto vendrá de la base de datos de Firebase.
-  // Por ahora lo pongo en 'false' para poder programar la pantalla.
-  bool _isAdmin = true; 
+  // Por defecto asumo que NADIE es admin, por seguridad (Fail-Safe)
+  bool _isAdmin = false; 
 
-  // Método para cerrar sesión
+  @override
+  void initState() {
+    super.initState();
+    _checkRole(); // Disparo la comprobación al cargar la pantalla
+  }
+
+  // MÉTODO PRIVADO: COMPROBACIÓN DE ROL (BACKEND)
+  Future<void> _checkRole() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      // Voy a buscar el "carnet de identidad" de este usuario a mi BD
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      
+      if (userDoc.exists) {
+        // Actualizo la UI solo si el rol coincide
+        setState(() {
+          _isAdmin = userDoc.get('role') == 'admin';
+        });
+      }
+    }
+  }
+
+  // MÉTODO PARA CERRAR SESIÓN DE FORMA SEGURA
   void _logout(BuildContext context) async {
     await AuthService().logout();
     if (context.mounted) {
@@ -53,11 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 
-                // --- CABECERA SUPERIOR ---
+                // --- CABECERA ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Saludo
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -65,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text("PANEL PRINCIPAL", style: GoogleFonts.teko(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold, height: 0.8)),
                       ],
                     ),
-                    // Botón Salir
                     IconButton(
                       onPressed: () => _logout(context),
                       icon: const Icon(Icons.logout, color: Colors.white70),
@@ -75,9 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 40),
 
-                // --- MENÚ PRINCIPAL ---
+                // --- MENÚ PRINCIPAL (BOTONES NAVEGABLES) ---
                 
-                // 1. GENERAR RUTINA
+                // 1. GENERAR RUTINA (FLUJO IA)
                 _buildMenuCard(
                   context,
                   title: "GENERAR NUEVA RUTINA",
@@ -93,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 20),
 
-                // 2. HISTORIAL
+                // 2. HISTORIAL (FLUJO PERSISTENCIA DE DATOS)
                 _buildMenuCard(
                   context,
                   title: "MI HISTORIAL",
@@ -101,13 +132,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.history,
                   color: Colors.white,
                   onTap: () {
-                    debugPrint("Ir a historial");
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                    );
                   },
                 ),
 
                 const SizedBox(height: 20),
 
-                // 3. PERFIL
+                // 3. PERFIL (FLUJO GESTIÓN DE USUARIO)
                 _buildMenuCard(
                   context,
                   title: "MI PERFIL",
@@ -115,21 +148,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.person_outline,
                   color: Colors.white,
                   onTap: () {
-                    debugPrint("Ir a perfil");
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
                   },
                 ),
                 
                 const Spacer(),
 
-                // --- ZONA ADMIN (SOLO VISIBLE SI _isAdmin es true) ---
+                // --- ZONA CRÍTICA: BOTÓN ADMINISTRADOR OCULTO ---
+                // Uso un spread operator (...) condicional. Si _isAdmin es false, 
+                // estos widgets literalmente no existen en el árbol de renderizado.
                 if (_isAdmin) ...[
-                  const Divider(color: Colors.white24), // Línea separadora
+                  const Divider(color: Colors.white24),
                   const SizedBox(height: 10),
                   
-                  // Botón especial de Admin
                   InkWell(
                     onTap: () {
-                      // NAVEGACIÓN: Ir al Panel de Admin
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const AdminScreen()),
                       );
@@ -138,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red.withAlpha(30), // Fondo rojizo para destacar
+                        color: Colors.red.withAlpha(30),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.red.withAlpha(100)),
                       ),
@@ -163,7 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                 ],
                 
-                // Logo pequeño marca de agua
                 Center(
                   child: Image.asset('assets/images/logo_white.png', height: 30, color: Colors.white38),
                 ),
@@ -175,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // WIDGET AUXILIAR: TARJETA DE MENÚ
+  // WIDGET REUTILIZABLE LOCALMENTE PARA MANTENER CÓDIGO LIMPIO
   Widget _buildMenuCard(BuildContext context, {
     required String title,
     required String subtitle,
