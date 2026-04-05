@@ -37,17 +37,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkRole(); // Disparo la comprobación al cargar la pantalla
   }
 
-  // MÉTODO PRIVADO: COMPROBACIÓN DE ROL (BACKEND)
+  // MÉTODO PRIVADO: COMPROBACIÓN DE ROL (BACKEND SEGURO)
   Future<void> _checkRole() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
-      // Voy a buscar el "carnet de identidad" de este usuario a mi BD
       DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       
       if (userDoc.exists) {
-        // Actualizo la UI solo si el rol coincide
+        // Extraemos los datos como un Mapa (Diccionario) para poder preguntar si existe la "llave"
+        final data = userDoc.data() as Map<String, dynamic>?;
+        
         setState(() {
-          _isAdmin = userDoc.get('role') == 'admin';
+          // Si los datos existen, Y contienen el campo 'role', Y ese rol es 'admin'... entonces es true.
+          // Si falla cualquiera de esas tres cosas, se queda en false de forma segura.
+          _isAdmin = data != null && data.containsKey('role') && data['role'] == 'admin';
         });
       }
     }

@@ -15,8 +15,9 @@ dependencies:
   # Versión compatible que no da problemas
   flutter_dotenv: ^6.0.0
   flutter_markdown: ^0.7.7+1
-  google_fonts: 5.1.0
+  google_fonts: ^6.2.1
   google_generative_ai: ^0.4.7
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +32,12 @@ flutter:
   assets:
     - assets/images/
     - .env
+  fonts:
+    - family: Teko
+      fonts:
+        - asset: assets/fonts/Teko-Regular.ttf
+        - asset: assets/fonts/Teko-Bold.ttf
+          weight: 700
 
 flutter_launcher_icons:
   android: "launcher_icon"
