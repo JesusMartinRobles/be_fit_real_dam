@@ -4,11 +4,11 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 
 // ==============================================================================
 // PANTALLA DE RESULTADO (RENDERIZADO)
-// ARGUMENTO DE DEFENSA: "Aunque he instruido a la IA para que el Markdown sea puro, 
+// Aunque he instruido a la IA para que el Markdown sea puro, 
 // a veces el modelo 'alucina' formatos incorrectos. He rediseñado el sanitizador con 
 // expresiones regulares (RegExp) avanzadas. Este algoritmo detecta y repara 
 // anomalías comunes (como títulos mezclados con negritas o faltas de espaciado) 
-// ANTES de que Flutter intente dibujar la pantalla, garantizando una interfaz robusta."
+// ANTES de que Flutter intente dibujar la pantalla, garantizando una interfaz robusta.
 // ==============================================================================
 class RoutineResultScreen extends StatelessWidget {
   final String routineText;

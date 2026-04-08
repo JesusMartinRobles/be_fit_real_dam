@@ -5,12 +5,12 @@ import 'login_screen.dart';
 
 // ==============================================================================
 // PANTALLA DE GUÍA INTERACTIVA (ONBOARDING)
-// ARGUMENTO DE DEFENSA: "Para cumplir con el requisito obligatorio de la guía 
+// Para cumplir con el requisito obligatorio de la guía 
 // interactiva, he implementado un 'PageView' que muestra las funcionalidades clave. 
 // Para garantizar que solo se muestre en la primera ejecución, utilizo el paquete 
 // 'shared_preferences'. Al finalizar la guía, se guarda un flag booleano en la 
 // memoria local del dispositivo (no en la nube, por eficiencia). El archivo main.dart 
-// lee este flag antes de arrancar para decidir si muestra esta guía o salta al Login."
+// lee este flag antes de arrancar para decidir si muestra esta guía o salta al Login.
 // ==============================================================================
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -52,11 +52,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           // FONDO (Podrías poner una imagen, pero aquí un gradiente oscuro queda elegante)
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [const Color(0xFF1E1E1E), Colors.black],
+                colors: [ Color(0xFF1E1E1E), Colors.black],
               ),
             ),
           ),
@@ -102,7 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   // Botón SALTAR
                   TextButton(
                     onPressed: _completeOnboarding,
-                    child: Text("SALTAR", style: TextStyle(color: Colors.white54, fontSize: 16)),
+                    child: const Text("SALTAR", style: TextStyle(color: Colors.white54, fontSize: 16)),
                   ),
 
                   // INDICADORES DE PÁGINA (Puntitos)

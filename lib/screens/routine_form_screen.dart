@@ -7,7 +7,7 @@ import '../widgets/custom_widgets.dart';
 import '../services/database_service.dart'; 
 import '../models/material_model.dart'; 
 
-// 🟢 NUEVAS IMPORTACIONES: El cerebro de la IA y la pantalla de resultados
+// NUEVAS IMPORTACIONES: El cerebro de la IA y la pantalla de resultados
 import '../services/ai_service.dart';
 import 'routine_result_screen.dart';
 
@@ -23,7 +23,7 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
   // Instanciamos el servicio de base de datos para no mezclar lógica de red con UI.
   final DatabaseService _dbService = DatabaseService();
   
-  // 🟢 Instanciamos nuestro servicio de IA
+  // Instanciamos nuestro servicio de IA
   final AIService _aiService = AIService();
 
   // 2. GESTIÓN DEL ESTADO (STATE)
@@ -101,10 +101,9 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
                     const SizedBox(height: 20),
 
                     // --- CAMPO 2: MATERIAL (CONEXIÓN A BACKEND) ---
-                    // ARGUMENTO DE DEFENSA: 
-                    // "Aquí usamos un StreamBuilder. Esto abre un canal de datos asíncrono 
+                    // Aquí usamos un StreamBuilder. Esto abre un canal de datos asíncrono 
                     // con Firestore. Si el Admin añade un material nuevo en la base de datos, 
-                    // esta lista se actualiza en el dispositivo del usuario en tiempo real."
+                    // esta lista se actualiza en el dispositivo del usuario en tiempo real.
                     const BeFitLabel("MATERIAL DISPONIBLE"),
                     const SizedBox(height: 5),
                     
@@ -300,9 +299,9 @@ class _RoutineFormScreenState extends State<RoutineFormScreen> {
 
 // ==============================================================================
 // WIDGET PRIVADO: DIÁLOGO MULTI-SELECCIÓN
-// ARGUMENTO DE DEFENSA: "He extraído el diálogo a un StatefulWidget privado. 
+// He extraído el diálogo a un StatefulWidget privado. 
 // Es necesario porque los Checkboxes necesitan mantener su propio estado (marcado/desmarcado) 
-// internamente antes de devolver el resultado final a la pantalla principal."
+// internamente antes de devolver el resultado final a la pantalla principal.
 // ==============================================================================
 class _MultiSelectDialog extends StatefulWidget {
   final List<String> items; 
@@ -338,7 +337,12 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
             return CheckboxListTile(
               value: isChecked, 
               title: Text(item, style: GoogleFonts.teko(color: Colors.white, fontSize: 20)), 
-              activeColor: widget.primaryColor, 
+              fillColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return widget.primaryColor;
+                }
+                return Colors.transparent; // Fondo vacío cuando no está marcado
+              }),
               checkColor: Colors.black, 
               controlAffinity: ListTileControlAffinity.leading, 
               onChanged: (bool? checked) { 

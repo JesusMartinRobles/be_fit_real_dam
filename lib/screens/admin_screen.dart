@@ -101,7 +101,7 @@ class AdminScreen extends StatelessWidget {
                 const Spacer(),
                 
                 // Marca de agua
-                Center(
+                const Center(
                   child: Icon(Icons.security, size: 40, color: Colors.white10),
                 ),
               ],

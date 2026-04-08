@@ -26,7 +26,6 @@ class AppTheme {
         primary: primaryColor,    
         secondary: primaryColor,  
         surface: secondaryColor,
-        background: backgroundBlack,
       ),
 
       inputDecorationTheme: InputDecorationTheme(

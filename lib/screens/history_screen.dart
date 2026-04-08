@@ -8,13 +8,13 @@ import 'routine_result_screen.dart';
 
 // ==============================================================================
 // PANTALLA DE HISTORIAL (PERSISTENCIA DE DATOS)
-// ARGUMENTO DE DEFENSA: "Para cumplir con el requisito de persistencia de la Tarea 3, 
+// Para cumplir con el requisito de persistencia de la Tarea 3, 
 // he implementado una lectura reactiva de la base de datos usando un StreamBuilder. 
 // En lugar de traer todas las rutinas del club, la app consulta exclusivamente 
 // la subcolección 'routines' del usuario autenticado actual (currentUser.uid). 
 // Esto garantiza la privacidad de los datos. Además, he reutilizado la pantalla 
 // 'RoutineResultScreen' para mostrar el detalle de las rutinas guardadas, aplicando 
-// el principio de diseño DRY (Don't Repeat Yourself)."
+// el principio de diseño DRY (Don't Repeat Yourself).
 // ==============================================================================
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});

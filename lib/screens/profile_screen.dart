@@ -6,12 +6,12 @@ import '../widgets/custom_widgets.dart'; // Importamos tus textfields de cristal
 
 // ==============================================================================
 // PANTALLA DE PERFIL (CRUD DE USUARIO)
-// ARGUMENTO DE DEFENSA: "Para completar la gestión de usuarios y cumplir con las 
+// Para completar la gestión de usuarios y cumplir con las 
 // operaciones CRUD de la base de datos, he implementado esta pantalla de Perfil. 
 // Al inicializarse (initState), realiza una operación de Lectura (Read) del documento 
 // del usuario en Firestore. Al pulsar guardar, realiza una operación de Actualización 
 // (Update), permitiendo al usuario personalizar sus datos físicos y preferencias, 
-// como incluir tiempo de meditación o proteger lesiones específicas por defecto."
+// como incluir tiempo de meditación o proteger lesiones específicas por defecto.
 // ==============================================================================
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -202,7 +202,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: TextStyle(color: Colors.white54, fontSize: 12),
                           ),
                           value: _includeMeditation,
-                          activeColor: primaryColor,
+                          activeTrackColor: primaryColor,
+                          activeThumbColor: Colors.black, // Destaca el botón sobre la pista verde
                           onChanged: (bool value) {
                             setState(() {
                               _includeMeditation = value;

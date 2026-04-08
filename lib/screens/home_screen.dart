@@ -13,12 +13,12 @@ import '../services/auth_service.dart';
 
 // ==============================================================================
 // PANEL PRINCIPAL (HOME SCREEN)
-// ARGUMENTO DE DEFENSA: "Esta es la pantalla central (Hub) de la app. Para 
+// Esta es la pantalla central (Hub) de la app. Para 
 // gestionar el botón de Administración he implementado una comprobación de 
 // seguridad asíncrona. En el 'initState', la app hace una petición a Firestore 
 // para leer el documento del usuario logueado. Solo si el campo 'role' es 
 // estrictamente igual a 'admin', se actualiza el estado y se renderiza el botón. 
-// Esto evita que usuarios estándar inyecten código para ver el panel."
+// Esto evita que usuarios estándar inyecten código para ver el panel.
 // ==============================================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
