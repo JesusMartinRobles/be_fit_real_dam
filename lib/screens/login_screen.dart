@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../services/auth_service.dart';
-import 'home_screen.dart'; 
-import 'register_screen.dart';
-import '../widgets/custom_widgets.dart'; 
 
+import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'register_screen.dart';
+import '../widgets/custom_widgets.dart';
+
+/// PANTALLA: LoginScreen (Autenticación de Usuarios)
+///
+/// Primera capa de seguridad de la aplicación.
+/// Elección de implementación: Se utiliza una arquitectura basada en un [Stack]
+/// para independizar el fondo visual interactivo de los elementos del formulario,
+/// permitiendo que el contenido fluya dinámicamente (`resizeToAvoidBottomInset`)
+/// cuando el teclado virtual del dispositivo se despliega, evitando errores de renderizado.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,21 +25,30 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   final _authService = AuthService();
 
-  // LÓGICA DE INICIO DE SESIÓN
+  /// Método Privado: Lógica de Inicio de Sesión
+  ///
+  /// Cumple con el Requisito 1 de la rúbrica: Validación de inserción de datos.
+  ///
+  /// Mecanismo:
+  /// 1. Validación local (Frontend): Impide llamadas innecesarias al servidor si
+  /// los campos están vacíos (sanitizados con .trim()).
+  /// 2. Llamada asíncrona (Backend): Interpela al servicio de Firebase.
+  /// 3. UX de Errores: Despliega mensajes de error capturados mediante el
+  /// componente estandarizado `showBeFitSnackBar`.
   void _attemptLogin() async {
-    // 1. VALIDACIÓN LOCAL (La primera barrera)
-    // Compruebo si el usuario ha escrito algo. El .trim() quita espacios en blanco.
-    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
+    // 1. Barrera Local (Prevención de inyección nula)
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
       if (mounted) {
-        // Uso mi aviso personalizado
         showBeFitSnackBar(context, "POR FAVOR, RELLENA EMAIL Y CONTRASEÑA");
       }
-      return; // ¡ALTO! No sigo ejecutando.
+      return;
     }
 
-    // 2. Si pasa la barrera, llamo a Firebase
+    // 2. Activación de estado de carga (Feedback visual)
     setState(() => _isLoading = true);
 
+    // 3. Petición al BaaS (Backend as a Service)
     final error = await _authService.login(
       email: _emailController.text,
       password: _passwordController.text,
@@ -40,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted) setState(() => _isLoading = false);
 
+    // 4. Resolución de la promesa
     if (error == null) {
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -48,7 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } else {
       if (mounted) {
-        // Ahora el error vendrá traducido del servicio
         showBeFitSnackBar(context, error);
       }
     }
@@ -59,10 +75,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Fondo quieto
-      body: Stack( // TRUCO DEL STACK PARA EL FONDO
+      // La capa base del Scaffold no se redimensiona para mantener el fondo estático
+      resizeToAvoidBottomInset: false,
+      body: Stack(
         children: [
-          // CAPA 1: FONDO
+          // --- CAPA 1: FONDO CORPORATIVO ---
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
@@ -75,11 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          
-          // CAPA 2: INTERFAZ
+
+          // --- CAPA 2: INTERFAZ DE FORMULARIO ---
           Scaffold(
             backgroundColor: Colors.transparent,
-            resizeToAvoidBottomInset: true, // El contenido sí se mueve con el teclado
+            // Esta subcapa sí se redimensiona dinámicamente con el teclado
+            resizeToAvoidBottomInset: true,
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -90,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        
+                        // Logotipo
                         Image.asset(
                           'assets/images/logo_white.png',
                           height: 250,
@@ -99,7 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 50),
 
-                        // INPUTS
+                        // --- CAMPOS DE ENTRADA (Validables) ---
+
                         const BeFitLabel("CORREO ELECTRÓNICO"),
                         const SizedBox(height: 8),
                         GlassTextField(
@@ -119,40 +138,31 @@ class _LoginScreenState extends State<LoginScreen> {
                           isPassword: true,
                         ),
 
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              "¿HAS OLVIDADO LA CONTRASEÑA?",
-                              style: GoogleFonts.teko(
-                                color: Colors.white54,
-                                fontSize: 16,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-
                         const SizedBox(height: 40),
 
-                        // BOTONES
+                        // --- ÁREA DE ACCIONES ---
+
+                        // Botón de Inicio de Sesión
                         _isLoading
-                            ? Center(child: CircularProgressIndicator(color: primaryColor))
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                    color: primaryColor))
                             : ElevatedButton(
                                 onPressed: _attemptLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: primaryColor,
                                   foregroundColor: Colors.black,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 0,
                                 ),
-                                child: Text(
+                                child: const Text(
                                   "INICIAR SESIÓN",
-                                  style: GoogleFonts.teko(
+                                  style: TextStyle(
+                                    fontFamily: 'Teko',
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1,
@@ -162,10 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 16),
 
+                        // Botón de Derivación a Registro
                         OutlinedButton(
                           onPressed: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                              MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen()),
                             );
                           },
                           style: OutlinedButton.styleFrom(
@@ -175,9 +187,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             "CREAR CUENTA",
-                            style: GoogleFonts.teko(
+                            style: TextStyle(
+                              fontFamily: 'Teko',
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,

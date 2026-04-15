@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-// Importaciones de Firebase para la seguridad de rutas
-import 'package:cloud_firestore/cloud_firestore.dart'; 
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import 'login_screen.dart'; 
-import 'routine_form_screen.dart'; 
-import 'admin_screen.dart'; 
-import 'history_screen.dart'; 
-import 'profile_screen.dart'; 
+import 'login_screen.dart';
+import 'routine_form_screen.dart';
+import 'admin_screen.dart';
+import 'history_screen.dart';
+import 'profile_screen.dart';
 import '../services/auth_service.dart';
 
-// ==============================================================================
-// PANEL PRINCIPAL (HOME SCREEN)
-// Esta es la pantalla central (Hub) de la app. Para 
-// gestionar el botón de Administración he implementado una comprobación de 
-// seguridad asíncrona. En el 'initState', la app hace una petición a Firestore 
-// para leer el documento del usuario logueado. Solo si el campo 'role' es 
-// estrictamente igual a 'admin', se actualiza el estado y se renderiza el botón. 
-// Esto evita que usuarios estándar inyecten código para ver el panel.
-// ==============================================================================
+/// PANTALLA: HomeScreen (Panel Principal o Hub)
+///
+/// Actúa como el centro de navegación principal de la aplicación.
+/// Elección de implementación: Para gestionar la visibilidad del botón de
+/// Administración, se implementa un patrón "Fail-Safe". Por defecto, nadie
+/// es administrador. Una petición asíncrona a Firestore valida el rol del
+/// usuario; solo si la base de datos confirma el rol 'admin', la UI se
+/// actualiza para revelar la zona crítica. Esto previene inyecciones de
+/// código desde el cliente.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -28,35 +26,46 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Por defecto asumo que NADIE es admin, por seguridad (Fail-Safe)
-  bool _isAdmin = false; 
+  /// Estado de seguridad: Asume false por defecto para evitar brechas.
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
-    _checkRole(); // Disparo la comprobación al cargar la pantalla
+    _checkRole();
   }
 
-  // MÉTODO PRIVADO: COMPROBACIÓN DE ROL (BACKEND SEGURO)
+  /// Método Privado: Comprobación de Rol
+  ///
+  /// Consulta el documento del usuario en Firestore de forma asíncrona.
+  /// Si el documento existe, contiene la clave 'role', y su valor es
+  /// exactamente 'admin', actualiza el estado local permitiendo el acceso.
   Future<void> _checkRole() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-      
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
       if (userDoc.exists) {
-        // Extraemos los datos como un Mapa (Diccionario) para poder preguntar si existe la "llave"
         final data = userDoc.data() as Map<String, dynamic>?;
-        
-        setState(() {
-          // Si los datos existen, Y contienen el campo 'role', Y ese rol es 'admin'... entonces es true.
-          // Si falla cualquiera de esas tres cosas, se queda en false de forma segura.
-          _isAdmin = data != null && data.containsKey('role') && data['role'] == 'admin';
-        });
+
+        if (mounted) {
+          setState(() {
+            _isAdmin = data != null &&
+                data.containsKey('role') &&
+                data['role'] == 'admin';
+          });
+        }
       }
     }
   }
 
-  // MÉTODO PARA CERRAR SESIÓN DE FORMA SEGURA
+  /// Método Privado: Cierre de Sesión
+  ///
+  /// Llama al servicio de autenticación para invalidar el token actual
+  /// y redirige al usuario a la pantalla de Login, limpiando la pila de navegación.
   void _logout(BuildContext context) async {
     await AuthService().logout();
     if (context.mounted) {
@@ -84,20 +93,30 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                
-                // --- CABECERA ---
+                // --- CABECERA DE USUARIO ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("HOLA, ATLETA", style: GoogleFonts.teko(color: Colors.white, fontSize: 24)),
-                        Text("PANEL PRINCIPAL", style: GoogleFonts.teko(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold, height: 0.8)),
+                        const Text("HOLA, ATLETA",
+                            style: TextStyle(
+                                fontFamily: 'Teko',
+                                color: Colors.white,
+                                fontSize: 24)),
+                        Text("PANEL PRINCIPAL",
+                            style: TextStyle(
+                                fontFamily: 'Teko',
+                                color: primaryColor,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                height: 0.8)),
                       ],
                     ),
                     IconButton(
@@ -109,9 +128,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 40),
 
-                // --- MENÚ PRINCIPAL (BOTONES NAVEGABLES) ---
-                
-                // 1. GENERAR RUTINA (FLUJO IA)
+                // --- MENÚ PRINCIPAL ---
+
+                // 1. Generador de Rutinas (Flujo IA)
                 _buildMenuCard(
                   context,
                   title: "GENERAR NUEVA RUTINA",
@@ -120,14 +139,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: primaryColor,
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RoutineFormScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const RoutineFormScreen()),
                     );
                   },
                 ),
 
                 const SizedBox(height: 20),
 
-                // 2. HISTORIAL (FLUJO PERSISTENCIA DE DATOS)
+                // 2. Historial (Flujo Persistencia)
                 _buildMenuCard(
                   context,
                   title: "MI HISTORIAL",
@@ -143,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3. PERFIL (FLUJO GESTIÓN DE USUARIO)
+                // 3. Perfil de Usuario
                 _buildMenuCard(
                   context,
                   title: "MI PERFIL",
@@ -156,16 +176,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                
+
                 const Spacer(),
 
                 // --- ZONA CRÍTICA: BOTÓN ADMINISTRADOR OCULTO ---
-                // Uso un spread operator (...) condicional. Si _isAdmin es false, 
-                // estos widgets literalmente no existen en el árbol de renderizado.
                 if (_isAdmin) ...[
                   const Divider(color: Colors.white24),
                   const SizedBox(height: 10),
-                  
                   InkWell(
                     onTap: () {
                       Navigator.of(context).push(
@@ -174,25 +191,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
                         color: Colors.red.withAlpha(30),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.red.withAlpha(100)),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.security, color: Colors.redAccent),
-                          const SizedBox(width: 10),
+                          Icon(Icons.security, color: Colors.redAccent),
+                          SizedBox(width: 10),
                           Text(
                             "PANEL DE ADMINISTRADOR",
-                            style: GoogleFonts.teko(
-                              color: Colors.redAccent, 
-                              fontSize: 20, 
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5
-                            ),
+                            style: TextStyle(
+                                fontFamily: 'Teko',
+                                color: Colors.redAccent,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5),
                           ),
                         ],
                       ),
@@ -200,9 +218,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                
+
+                // Logotipo Inferior
+                // VUELVE A TU CÓDIGO ORIGINAL QUE FUNCIONABA BIEN
                 Center(
-                  child: Image.asset('assets/images/logo_white.png', height: 30, color: Colors.white38),
+                  child: Image.asset('assets/images/logo_white.png',
+                      height: 30, color: Colors.white38),
                 ),
               ],
             ),
@@ -212,8 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // WIDGET REUTILIZABLE LOCALMENTE PARA MANTENER CÓDIGO LIMPIO
-  Widget _buildMenuCard(BuildContext context, {
+  /// Constructor de Widgets Reutilizable: _buildMenuCard
+  ///
+  /// Abstrae la lógica visual de las tarjetas del menú principal, aplicando
+  /// un diseño consistente de 'Glassmorphism' para mantener el código DRY.
+  Widget _buildMenuCard(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
@@ -245,12 +270,20 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.teko(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
-                  Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(title,
+                      style: const TextStyle(
+                          fontFamily: 'Teko',
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold)),
+                  Text(subtitle,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 16),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.white38, size: 16),
           ],
         ),
       ),

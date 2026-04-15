@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-// ==============================================================================
-// PANTALLA DE RESULTADO (RENDERIZADO)
-// Aunque he instruido a la IA para que el Markdown sea puro, 
-// a veces el modelo 'alucina' formatos incorrectos. He rediseñado el sanitizador con 
-// expresiones regulares (RegExp) avanzadas. Este algoritmo detecta y repara 
-// anomalías comunes (como títulos mezclados con negritas o faltas de espaciado) 
-// ANTES de que Flutter intente dibujar la pantalla, garantizando una interfaz robusta.
-// ==============================================================================
+/// PANTALLA: RoutineResultScreen (Renderizado de Rutinas)
+///
+/// Encargada de mostrar el entrenamiento generado o recuperado del historial.
+/// Elección de implementación: Debido a la naturaleza estocástica de los
+/// modelos generativos (LLMs), ocasionalmente devuelven Markdown malformado.
+/// Esta clase implementa un algoritmo de sanitización (Filtro RegExp) que
+/// intercepta y corrige anomalías de formato (ej: Títulos envueltos en negrita)
+/// *antes* de delegar el renderizado al motor de Flutter, previniendo excepciones
+/// visuales y garantizando una interfaz de usuario robusta.
 class RoutineResultScreen extends StatelessWidget {
+  /// Texto crudo en formato Markdown a renderizar.
   final String routineText;
 
   const RoutineResultScreen({super.key, required this.routineText});
 
-  // FILTRO ANTIMANCHAS MARKDOWN (Súper Agresivo)
+  /// Método Privado: Sanitizador de Markdown
+  ///
+  /// Utiliza Expresiones Regulares (RegExp) para limpiar el texto crudo.
+  /// Entradas: [rawText] generado por la IA o leído de Firestore.
+  /// Salidas: Cadena de texto compatible con el estándar estricto de [flutter_markdown].
   String _sanitizeMarkdown(String rawText) {
     String text = rawText;
-    
-    // 1. Quitar negritas enteras que envuelven un título (ej: **## Titulo**)
-    text = text.replaceAllMapped(RegExp(r'\*\*(#+)\s*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
-    
-    // 2. Quitar negritas por dentro de un título (ej: ## **Titulo**)
-    text = text.replaceAllMapped(RegExp(r'(#+)\s*\*\*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
-    
-    // 3. Obligar a que haya un espacio después de los ## (ej: ##Titulo -> ## Titulo)
-    text = text.replaceAllMapped(RegExp(r'^(#+)([^ \n])', multiLine: true), (m) => '${m[1]} ${m[2]}');
-    
-    // 4. Asegurar línea en blanco antes de cualquier título para que el parser no se atragante
-    text = text.replaceAllMapped(RegExp(r'([^\n])\n(#+ )'), (m) => '${m[1]}\n\n${m[2]}');
+
+    // Regla 1: Desanida negritas externas (ej: **## Titulo** -> ## Titulo)
+    text = text.replaceAllMapped(
+        RegExp(r'\*\*(#+)\s*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
+
+    // Regla 2: Desanida negritas internas (ej: ## **Titulo** -> ## Titulo)
+    text = text.replaceAllMapped(
+        RegExp(r'(#+)\s*\*\*(.*?)\*\*'), (m) => '${m[1]} ${m[2]}');
+
+    // Regla 3: Fuerza espaciado estructural (ej: ##Titulo -> ## Titulo)
+    text = text.replaceAllMapped(
+        RegExp(r'^(#+)([^ \n])', multiLine: true), (m) => '${m[1]} ${m[2]}');
+
+    // Regla 4: Previene colisiones de bloques inyectando saltos de línea dobles
+    text = text.replaceAllMapped(
+        RegExp(r'([^\n])\n(#+ )'), (m) => '${m[1]}\n\n${m[2]}');
 
     return text;
   }
@@ -37,15 +46,17 @@ class RoutineResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
-    
-    // Pasamos la rutina por la "lavadora" antes de pintarla
+
+    // Ejecución del middleware de limpieza de formato
     final String safeText = _sanitizeMarkdown(routineText);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF121212),
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text("TU ENTRENAMIENTO", style: GoogleFonts.teko(color: Colors.white, fontSize: 28)),
+        title: const Text("TU ENTRENAMIENTO",
+            style: TextStyle(
+                fontFamily: 'Teko', color: Colors.white, fontSize: 28)),
         centerTitle: true,
       ),
       backgroundColor: const Color(0xFF121212),
@@ -61,14 +72,25 @@ class RoutineResultScreen extends StatelessWidget {
               border: Border.all(color: primaryColor.withAlpha(50)),
             ),
             child: Markdown(
-              data: safeText, // Texto limpio
+              // Inyección de los datos sanitizados al widget de renderizado
+              data: safeText,
               physics: const BouncingScrollPhysics(),
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-                // Aquí el H2 es el maestro de ceremonias: Verde y enorme
-                h2: GoogleFonts.teko(color: primaryColor, fontSize: 32, fontWeight: FontWeight.bold),
-                h3: GoogleFonts.teko(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-                strong: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                p: const TextStyle(
+                    color: Colors.white, fontSize: 16, height: 1.5),
+                // Jerarquía visual personalizada con la tipografía corporativa
+                h2: TextStyle(
+                    fontFamily: 'Teko',
+                    color: primaryColor,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold),
+                h3: const TextStyle(
+                    fontFamily: 'Teko',
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold),
+                strong:
+                    TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
                 listBullet: TextStyle(color: primaryColor, fontSize: 20),
               ),
             ),

@@ -1,15 +1,22 @@
+import 'package:flutter/foundation.dart'; // Necesario para debugPrint
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // <--- PARA LEER EL .ENV
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// ==============================================================================
-// SERVICIO DE INTELIGENCIA ARTIFICIAL (GEMINI)
-// ARGUMENTO DE DEFENSA: "La seguridad es vital. La API Key ya no está 'hardcodeada', 
-// sino que se lee de memoria de forma segura mediante 'dotenv.env'. Además, he 
-// ajustado el 'Prompt Engineering' (las instrucciones a la IA) para obligarla a 
-// usar un formato Markdown impecable, reduciendo errores de renderizado en el frontend."
-// ==============================================================================
+/// SERVICIO: AIService (Integración con Inteligencia Artificial)
+///
+/// Gestiona la comunicación con el modelo de lenguaje de Google (Gemini AI).
+/// Elección de implementación (Seguridad): La API Key no se encuentra 'hardcodeada'
+/// en el código fuente (lo cual sería una vulnerabilidad grave), sino que se extrae
+/// de forma segura en tiempo de ejecución a través de variables de entorno (archivo .env).
+///
+/// Arquitectura de Prompt Engineering: Se ha implementado un sistema de inyección
+/// de contexto estructurado (System Prompting). Las instrucciones incluyen reglas
+/// algorítmicas estrictas para obligar al LLM a devolver un formato Markdown validado
+/// que no corrompa el motor de renderizado del frontend.
 class AIService {
-  
+  /// Método Asíncrono: Generador de Rutinas
+  ///
+  /// Recibe los parámetros de estado del formulario y orquesta la petición a la API.
   Future<String> generateRoutine({
     required String focus,
     required String time,
@@ -17,22 +24,24 @@ class AIService {
     required String goal,
     required String injuries,
   }) async {
-    
-    // 1. LEER LA CLAVE SECRETA (Seguridad)
+    // 1. Inyección Segura de Credenciales (Variable de Entorno)
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       return "Error crítico: No se encontró la API Key en el archivo .env.";
     }
 
+    // Instanciación del modelo generativo (Se usa la versión Flash por su baja latencia)
     final model = GenerativeModel(
-      model: 'gemini-2.5-flash', // Actualizado al modelo más potente y rápido
+      model: 'gemini-2.5-flash',
       apiKey: apiKey,
     );
-    
-    final safeInjuries = injuries.trim().isEmpty ? "Ninguna molestia." : injuries;
+
+    // Sanitización de parámetros vacíos
+    final safeInjuries =
+        injuries.trim().isEmpty ? "Ninguna molestia." : injuries;
     final materialsText = materials.join(", ");
 
-    // 2. PROMPT MEJORADO (Prevención de errores Markdown)
+    // 2. Construcción del Prompt (Contexto + Datos + Reglas Sintácticas)
     final String prompt = '''
       Eres un Entrenador Personal de Élite. Diseña una rutina directa y segura.
 
@@ -54,11 +63,13 @@ class AIService {
       ''';
 
     try {
+      // 3. Ejecución de la llamada de red al modelo
       final response = await model.generateContent([Content.text(prompt)]);
       return response.text ?? "Error: La IA no generó contenido.";
     } catch (e) {
-      print("Error en Gemini AI: $e");
-      return "Error de conexión con la IA. Detalle: $e";
+      // Sustitución de print() por debugPrint() para evitar logs residuales en Producción (Release)
+      debugPrint("Excepción en capa de IA (AIService): $e");
+      return "Error de conexión con el servicio de IA. Comprueba tu conexión a internet.";
     }
   }
 }

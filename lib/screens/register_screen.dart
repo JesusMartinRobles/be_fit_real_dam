@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../services/auth_service.dart';
 import 'home_screen.dart';
-import '../widgets/custom_widgets.dart'; 
+import '../widgets/custom_widgets.dart';
 
+/// PANTALLA: RegisterScreen (Registro de Nuevos Usuarios)
+///
+/// Componente encargado de la creación de cuentas.
+/// Elección de implementación: Incorpora validaciones locales estrictas
+/// (campos obligatorios y coincidencia de contraseñas) para evitar peticiones
+/// malformadas al servidor. Exige un "Código de Invitación" activo consultando
+/// una colección separada en Firestore, implementando un control de acceso
+/// para mantener la exclusividad de la aplicación.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -12,47 +20,61 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  // Controladores de estado para capturar la entrada del usuario
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _inviteCodeController = TextEditingController();
 
+  // Bandera de estado para el indicador de carga asíncrona
   bool _isLoading = false;
+
+  // Instancia del servicio de autenticación (desacoplado de la vista)
   final _authService = AuthService();
 
-void _attemptRegister() async {
-    // 1. VALIDACIONES LOCALES
-    if (_emailController.text.trim().isEmpty || 
-        _passwordController.text.trim().isEmpty || 
+  /// Método Privado: Lógica de Registro
+  ///
+  /// Cumple con el requisito de "validación de correcta inserción".
+  /// Ejecuta comprobaciones secuenciales en el cliente antes de invocar el backend.
+  void _attemptRegister() async {
+    // 1. Barrera de Seguridad Local: Campos vacíos
+    // Se utiliza .trim() para evitar que el usuario inserte solo espacios en blanco.
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty ||
         _confirmPasswordController.text.trim().isEmpty ||
-        _inviteCodeController.text.trim().isEmpty) { // <--- AHORA EL CÓDIGO ES OBLIGATORIO
+        _inviteCodeController.text.trim().isEmpty) {
       if (mounted) {
         showBeFitSnackBar(context, "RELLENA TODOS LOS CAMPOS");
       }
-      return;
+      return; // Interrupción temprana (Early Return)
     }
 
+    // 2. Barrera de Seguridad Local: Coincidencia de credenciales
     if (_passwordController.text != _confirmPasswordController.text) {
       if (mounted) {
         showBeFitSnackBar(context, "LAS CONTRASEÑAS NO COINCIDEN");
       }
-      return;
+      return; // Interrupción temprana (Early Return)
     }
 
     setState(() => _isLoading = true);
-    
-    // 2. LLAMADA AL SERVICIO
+
+    // 3. Ejecución del Servicio (Backend)
+    // Se fuerza la sanitización a mayúsculas del código para garantizar
+    // coincidencias exactas (case-insensitive) con la base de datos.
     final error = await _authService.register(
-      email: _emailController.text,
+      email: _emailController.text.trim(),
       password: _passwordController.text,
-      inviteCode: _inviteCodeController.text.trim().toUpperCase(), // <--- PASAMOS EL CÓDIGO (En mayúsculas por si acaso)
+      inviteCode: _inviteCodeController.text.trim().toUpperCase(),
     );
-    
+
     if (mounted) setState(() => _isLoading = false);
 
+    // 4. Resolución de Promesa (Navegación o Error)
     if (error == null) {
       if (mounted) {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
     } else {
       if (mounted) {
@@ -75,18 +97,23 @@ void _attemptRegister() async {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      // Usamos el Stack para arreglar lo del teclado aquí también
+      // Uso de Stack para mantener la imagen de fondo estática mientras el
+      // SingleChildScrollView se desplaza al invocar el teclado virtual.
       body: Stack(
         children: [
+          // --- CAPA FONDO ---
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: const AssetImage('assets/images/fondo_bfr.png'),
                 fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(Colors.black.withAlpha(160), BlendMode.darken),
+                colorFilter: ColorFilter.mode(
+                    Colors.black.withAlpha(160), BlendMode.darken),
               ),
             ),
           ),
+
+          // --- CAPA FORMULARIO (Desplazable) ---
           Scaffold(
             backgroundColor: Colors.transparent,
             resizeToAvoidBottomInset: true,
@@ -100,20 +127,29 @@ void _attemptRegister() async {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // CABECERA
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset('assets/images/logo_white.png', height: 80),
+                            Image.asset('assets/images/logo_white.png',
+                                height: 80),
                             const SizedBox(width: 20),
-                            Flexible(
-                              child: Text("PANTALLA DE\nREGISTRO", textAlign: TextAlign.right, style: GoogleFonts.teko(fontSize: 35, fontWeight: FontWeight.bold, color: Colors.white, height: 1.0)),
+                            const Flexible(
+                              child: Text("PANTALLA DE\nREGISTRO",
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                      fontFamily: 'Teko',
+                                      fontSize: 35,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      height: 1.0)),
                             ),
                           ],
                         ),
                         const SizedBox(height: 40),
 
-                        // --- FORMULARIO REUTILIZABLE ---
-                        
+                        // --- CAMPOS DE ENTRADA ---
+
                         const BeFitLabel("E-MAIL"),
                         const SizedBox(height: 5),
                         GlassTextField(
@@ -150,23 +186,34 @@ void _attemptRegister() async {
                         const SizedBox(height: 5),
                         GlassTextField(
                           controller: _inviteCodeController,
-                          hint: "Opcional",
+                          hint:
+                              "Introduce tu código (Ej: VIP_2026)", // Corrección UX (obligatorio)
                           icon: Icons.confirmation_number_outlined,
                         ),
 
                         const SizedBox(height: 40),
 
+                        // --- BOTÓN DE ACCIÓN ---
                         _isLoading
-                            ? Center(child: CircularProgressIndicator(color: primaryColor))
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                    color: primaryColor))
                             : ElevatedButton(
                                 onPressed: _attemptRegister,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: primaryColor,
                                   foregroundColor: Colors.black,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: Text("REGISTRARSE", style: GoogleFonts.teko(fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                child: const Text("REGISTRARSE",
+                                    style: TextStyle(
+                                        fontFamily: 'Teko',
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1)),
                               ),
                       ],
                     ),

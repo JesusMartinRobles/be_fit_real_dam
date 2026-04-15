@@ -7,15 +7,15 @@ import 'config/theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 
-// ==============================================================================
-// FUNCIÓN MAIN (SÚPER LIGERA)
-// ==============================================================================
+/// PUNTO DE ENTRADA: main()
+///
+/// Función principal que arranca la aplicación de Flutter.
+/// Elección de implementación: Se asegura la vinculación de los widgets y
+/// se lanza inmediatamente la UI ([BeFitRealApp]) sin bloquear el hilo principal.
+/// Las inicializaciones pesadas (Firebase, Variables de Entorno) se delegan
+/// asíncronamente a la [SplashScreen] para evitar pantallas negras en el arranque.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // ¡ARRANCAMOS INMEDIATAMENTE!
-  // Esto le da al depurador de VS Code (F5) un "enganche" instantáneo,
-  // evitando la pantalla negra o los bloqueos "zombie".
   runApp(const BeFitRealApp());
 }
 
@@ -27,20 +27,21 @@ class BeFitRealApp extends StatelessWidget {
     return MaterialApp(
       title: 'Be Fit Real',
       debugShowCheckedModeBanner: false,
-      
-      // Aplicamos el tema Teko globalmente desde el milisegundo 1
+
+      // Aplicación del sistema de diseño (Design System) global
       theme: AppTheme.getTheme(),
-      
-      // En lugar de hacer condicionales aquí, vamos directos a la pantalla de carga
+
+      // Delegación de ruteo inicial a la pantalla de carga (Middleware)
       home: const SplashScreen(),
     );
   }
 }
 
-// ==============================================================================
-// PANTALLA DE CARGA (SPLASH SCREEN)
-// Aquí es donde se hace todo el trabajo pesado de forma segura en segundo plano.
-// ==============================================================================
+/// PANTALLA: SplashScreen (Pantalla de Carga y Enrutamiento)
+///
+/// Actúa como un interceptor de inicialización. Mientras el usuario visualiza
+/// una interfaz amigable, la app carga dependencias críticas y determina el
+/// árbol de navegación inicial basándose en la persistencia local.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -49,46 +50,63 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  
   @override
   void initState() {
     super.initState();
-    // Nada más aparecer esta pantalla, empezamos a cargar el backend
     _bootApp();
   }
 
+  /// Método Asíncrono: Secuencia de Arranque (Boot Sequence)
   Future<void> _bootApp() async {
     try {
-      // 1. Cargamos configuración
+      // 1. Carga de Variables de Entorno (API Keys)
       await dotenv.load(fileName: ".env");
-      
-      // 2. Cargamos Firebase
-      await Firebase.initializeApp();
-      
-      // 3. Leemos la memoria
-      final prefs = await SharedPreferences.getInstance();
-      
-      // 🟢 TRUCO PARA PRUEBAS: 
-      // Si quieres volver a ver la Guía Interactiva, descomenta esta línea,
-      // guarda y ejecuta. Luego vuelve a comentarla.
-      // await prefs.setBool('hasSeenOnboarding', false); 
 
+      // 2. Inicialización del Backend as a Service (BaaS)
+      await Firebase.initializeApp();
+
+      // 3. Lectura de estado de Onboarding (SharedPreferences)
+      final prefs = await SharedPreferences.getInstance();
       final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
-      // 4. Pausa estética para que el usuario vea el logo (1.5 segundos)
+      // 4. Pausa de cortesía (UX)
       await Future.delayed(const Duration(milliseconds: 1500));
 
-      // 5. NAVEGACIÓN
+      // 5. Resolución de Enrutamiento
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => hasSeenOnboarding ? const LoginScreen() : const OnboardingScreen(),
+            builder: (_) => hasSeenOnboarding
+                ? const LoginScreen()
+                : const OnboardingScreen(),
           ),
         );
       }
     } catch (e) {
-      debugPrint("Error crítico en arranque: $e");
+      debugPrint("Excepción fatal en secuencia de arranque: $e");
+      // Fallback Visual: Previene que la app se quede colgada infinitamente
+      if (mounted) {
+        _showErrorDialog(e.toString());
+      }
     }
+  }
+
+  /// Feedback visual en caso de que falte el archivo .env o falle Firebase
+  void _showErrorDialog(String errorMsg) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text("ERROR DE INICIALIZACIÓN",
+            style: TextStyle(
+                fontFamily: 'Teko', color: Colors.redAccent, fontSize: 24)),
+        content: Text(
+          "La aplicación no pudo arrancar. Verifica tu conexión a internet o la existencia del archivo .env.\n\nDetalle técnico: $errorMsg",
+          style: const TextStyle(color: Colors.white70),
+        ),
+      ),
+    );
   }
 
   @override

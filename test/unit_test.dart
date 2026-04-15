@@ -1,131 +1,143 @@
 import 'package:flutter_test/flutter_test.dart';
 
-// Importamos los modelos de nuestra aplicación
+// Importaciones de los modelos del dominio
 import 'package:be_fit_real/models/user_model.dart';
 import 'package:be_fit_real/models/material_model.dart';
 import 'package:be_fit_real/models/invite_code_model.dart';
 
-/// BATERÍA DE PRUEBAS UNITARIAS
-/// Mecanismo: Se utiliza el framework 'flutter_test' para aislar y validar 
-/// el comportamiento de los modelos de datos (Serialización/Deserialización).
+/// BATERÍA DE PRUEBAS UNITARIAS: Módulo de Datos
+///
+/// Mecanismo de validación: Se utiliza el framework [flutter_test] para aislar
+/// y garantizar el comportamiento determinista de los modelos de datos de la
+/// aplicación. Estas pruebas aseguran que las operaciones de Serialización (a JSON)
+/// y Deserialización (desde JSON) sean seguras y tolerantes a fallos, previniendo
+/// regresiones en la capa de persistencia.
 void main() {
-  group('Pruebas Unitarias - Módulo de Datos (Modelos)', () {
-    
+  group('Pruebas Unitarias - Serialización y Programación Defensiva', () {
     // =========================================================================
-    // TESTS DE USER MODEL (Pruebas 1 a 4)
+    // SUITE 1: UserModel (Gestión de Identidad)
     // =========================================================================
 
-    /// PRUEBA 1: Serialización de UserModel a Map
-    /// Entradas: Un objeto [UserModel] instanciado con datos simulados.
-    /// Salidas esperadas: Un [Map] válido para Firebase con el uid '123'.
-    test('1. UserModel convierte correctamente a Map (Dart a Firebase)', () {
+    /// PRUEBA 1: Serialización de UserModel a formato NoSQL (Map)
+    /// Objetivo: Verificar que los datos tipados en Dart se mapean correctamente
+    /// a primitivas compatibles con Firestore.
+    test('1. UserModel: Serialización correcta a Map (Dart -> Firebase)', () {
       final date = DateTime(2026, 1, 1);
-      final user = UserModel(uid: '123', email: 'test@test.com', role: 'admin', createdAt: date);
-      
+      final user = UserModel(
+          uid: '123', email: 'test@test.com', role: 'admin', createdAt: date);
+
       final map = user.toMap();
-      
+
       expect(map['uid'], '123');
       expect(map['role'], 'admin');
     });
 
-    /// PRUEBA 2: Deserialización de Map a UserModel
-    /// Entradas: Un [Map] simulando un JSON recibido desde Firestore.
-    /// Salidas esperadas: Un objeto [UserModel] con el email 'user@test.com'.
-    test('2. UserModel se crea correctamente desde Map (Firebase a Dart)', () {
-      final map = {'uid': '456', 'email': 'user@test.com', 'role': 'user', 'createdAt': '2026-01-01T00:00:00.000'};
-      
+    /// PRUEBA 2: Deserialización estándar desde payload de red
+    /// Objetivo: Validar la reconstrucción del objeto desde un JSON simulado.
+    test('2. UserModel: Deserialización correcta desde Map (Firebase -> Dart)',
+        () {
+      final map = {
+        'uid': '456',
+        'email': 'user@test.com',
+        'role': 'user',
+        'createdAt': '2026-01-01T00:00:00.000'
+      };
+
       final user = UserModel.fromMap(map);
-      
+
       expect(user.uid, '456');
       expect(user.email, 'user@test.com');
     });
 
-    /// PRUEBA 3: Asignación de Rol por Defecto (Seguridad)
-    /// Entradas: Un [Map] incompleto sin el campo 'role' (Simula error en BD).
-    /// Salidas esperadas: El modelo debe autoprotegerse y asignar el rol 'user'.
-    test('3. UserModel asigna rol "user" por defecto si falta en la BBDD', () {
-      final map = {'uid': '789', 'email': 'nolead@test.com', 'createdAt': '2026-01-01T00:00:00.000'};
-      
+    /// PRUEBA 3: Tolerancia a fallos (Control de Roles nulos)
+    /// Objetivo: Comprobar el mecanismo Fail-Safe que asigna el privilegio
+    /// mínimo ('user') si la base de datos devuelve un documento corrupto.
+    test('3. UserModel: Asignación de rol "user" por defecto ante datos corruptos',
+        () {
+      final map = {
+        'uid': '789',
+        'email': 'nolead@test.com',
+        'createdAt': '2026-01-01T00:00:00.000'
+      };
+
       final user = UserModel.fromMap(map);
-      
+
       expect(user.role, 'user');
     });
 
-    /// PRUEBA 4: Formateo de Fecha ISO 8601
-    /// Entradas: Un [DateTime] nativo de Dart.
-    /// Salidas esperadas: Un String en formato ISO 8601 compatible con Firebase.
-    test('4. UserModel guarda la fecha en formato String compatible', () {
+    /// PRUEBA 4: Estandarización de Fechas (ISO 8601)
+    /// Objetivo: Asegurar que el timestamp no se envíe como un objeto nativo Dart.
+    test('4. UserModel: Transformación de DateTime a estándar ISO 8601', () {
       final date = DateTime(2026, 5, 10);
-      final user = UserModel(uid: '1', email: 'a@a.com', role: 'user', createdAt: date);
-      
+      final user =
+          UserModel(uid: '1', email: 'a@a.com', role: 'user', createdAt: date);
+
       expect(user.toMap()['createdAt'], date.toIso8601String());
     });
 
     // =========================================================================
-    // TESTS DE MATERIAL MODEL (Pruebas 5 a 7)
+    // SUITE 2: MaterialModel (Gestión de Inventario)
     // =========================================================================
 
-    /// PRUEBA 5: Serialización de MaterialModel
-    /// Entradas: Objeto [MaterialModel] "Mancuernas 10kg".
-    /// Salidas esperadas: Map con claves 'id' y 'name' correctas.
-    test('5. MaterialModel convierte a Map correctamente', () {
+    /// PRUEBA 5: Serialización estándar
+    test('5. MaterialModel: Serialización correcta a formato Map', () {
       final material = MaterialModel(id: 'mat1', name: 'Mancuernas 10kg');
       expect(material.toMap(), {'id': 'mat1', 'name': 'Mancuernas 10kg'});
     });
 
-    /// PRUEBA 6: Deserialización de MaterialModel
-    /// Entradas: Map JSON con nombre y un ID de documento inyectado externamente.
-    /// Salidas esperadas: Objeto [MaterialModel] bien construido.
-    test('6. MaterialModel se construye desde Map', () {
+    /// PRUEBA 6: Deserialización con ID inyectado
+    /// Objetivo: Validar el patrón DTO donde el ID del documento NoSQL
+    /// se inyecta en el objeto durante su construcción.
+    test('6. MaterialModel: Deserialización con inyección de Document ID', () {
       final map = {'name': 'Barra Olímpica'};
       final material = MaterialModel.fromMap(map, 'mat2');
-      
+
       expect(material.id, 'mat2');
       expect(material.name, 'Barra Olímpica');
     });
 
-    /// PRUEBA 7: Tolerancia a fallos en MaterialModel
-    /// Entradas: Un Map vacío (Corrupción de datos).
-    /// Salidas esperadas: El modelo sobrevive asignando 'Material desconocido'.
-    test('7. MaterialModel asigna nombre por defecto ante datos corruptos', () {
-      final map = <String, dynamic>{}; 
+    /// PRUEBA 7: Tolerancia a nulos (Crash Prevention)
+    test('7. MaterialModel: Fallback a "Material desconocido" ante map vacío',
+        () {
+      final map = <String, dynamic>{};
       final material = MaterialModel.fromMap(map, 'mat3');
-      
+
       expect(material.name, 'Material desconocido');
     });
 
     // =========================================================================
-    // TESTS DE INVITE CODE MODEL (Pruebas 8 a 10)
+    // SUITE 3: InviteCodeModel (Seguridad y Control de Acceso)
     // =========================================================================
 
-    /// PRUEBA 8: Serialización de Códigos
-    /// Entradas: Objeto [InviteCodeModel] activo.
-    /// Salidas esperadas: JSON validado con el booleano 'isActive' en true.
-    test('8. InviteCodeModel convierte a Map correctamente', () {
+    /// PRUEBA 8: Serialización de estados booleanos
+    test('8. InviteCodeModel: Serialización de estados lógicos (isActive)', () {
       final date = DateTime.now();
-      final code = InviteCodeModel(id: 'c1', code: 'PROYECTO10', isActive: true, createdAt: date);
-      
+      final code = InviteCodeModel(
+          id: 'c1', code: 'PROYECTO10', isActive: true, createdAt: date);
+
       expect(code.toMap()['code'], 'PROYECTO10');
       expect(code.toMap()['isActive'], true);
     });
 
-    /// PRUEBA 9: Validación de Estados Lógicos
-    /// Entradas: JSON de un código caducado.
-    /// Salidas esperadas: La propiedad 'isActive' del objeto es false.
-    test('9. InviteCodeModel detecta si un código está inactivo', () {
-      final map = {'code': 'CADUCADO', 'isActive': false, 'createdAt': '2025-01-01T00:00:00.000'};
+    /// PRUEBA 9: Validación de expiración
+    test('9. InviteCodeModel: Detección correcta de códigos inactivos/caducados',
+        () {
+      final map = {
+        'code': 'CADUCADO',
+        'isActive': false,
+        'createdAt': '2025-01-01T00:00:00.000'
+      };
       final code = InviteCodeModel.fromMap(map, 'c2');
-      
+
       expect(code.isActive, false);
     });
 
-    /// PRUEBA 10: Prevención de inyección nula
-    /// Entradas: JSON donde falta el campo fundamental 'code'.
-    /// Salidas esperadas: El modelo asigna la cadena 'INVALID' para evitar crasheos.
-    test('10. InviteCodeModel marca "INVALID" si falta el código en el JSON', () {
+    /// PRUEBA 10: Prevención de inyección nula en credenciales
+    test('10. InviteCodeModel: Asignación de "INVALID" ante ausencia de clave "code"',
+        () {
       final map = {'isActive': true, 'createdAt': '2026-01-01T00:00:00.000'};
       final code = InviteCodeModel.fromMap(map, 'c3');
-      
+
       expect(code.code, 'INVALID');
     });
   });

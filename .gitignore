@@ -1,46 +1,59 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
+# ==============================================================================
+# ARCHIVO: .gitignore - Be Fit Real
+# 
+# OBJETIVO: Define qué archivos y carpetas deben ser ignorados por Git.
+# ESTRATEGIA: Se filtran archivos temporales, configuraciones de IDE locales y,
+# sobre todo, credenciales sensibles para garantizar la seguridad del proyecto.
+# ==============================================================================
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
+# --- SEGURIDAD Y CREDENCIALES (CRÍTICO) ---
+# Evita la fuga de API Keys (Gemini) y secretos de producción.
+.env
+*.pem
+*.key
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# --- FLUTTER / DART / PUB ---
+# Archivos generados automáticamente durante la compilación.
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# --- ARTEFACTOS DE COMPILACIÓN ANDROID ---
 /android/app/debug
 /android/app/profile
 /android/app/release
+*.apk
+*.aab
+*.jks
 
-# Variables de entorno secretas
-.env
+# --- CONFIGURACIÓN DE IDEs (LOCAL) ---
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Visual Studio Code
+# Nota: No ignoramos .vscode/ completo porque puede contener 
+# tareas de proyecto compartidas, pero sí archivos personales.
+.vscode/settings.json
+.vscode/bin/
+.vscode/obj/
+
+# --- ARCHIVOS DE SISTEMA Y TEMPORALES ---
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.class
+.history
+migrate_working_dir/
+
+# --- DEPURACIÓN Y SÍMBOLOS ---
+app.*.symbols
+app.*.map.json

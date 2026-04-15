@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-// Importo las pantallas a las que voy a navegar
+
+// Importación de las pantallas de destino
 import 'materials_admin_screen.dart';
 import 'invite_codes_screen.dart';
 
-// PANTALLA DE ADMINISTRACIÓN
+/// PANTALLA: AdminScreen (Panel de Control)
+///
+/// Actúa como un hub central (dashboard) exclusivo para usuarios con rol 'admin'.
+/// Elección de implementación: Se ha diseñado una interfaz basada en tarjetas
+/// expansivas (utilizando un método constructor privado) para mantener el código
+/// limpio, cumplir el principio DRY y facilitar la escalabilidad futura si se
+/// añaden nuevos módulos de administración.
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Extracción de la paleta corporativa desde el tema global
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
@@ -21,86 +28,83 @@ class AdminScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text("PANEL DE CONTROL", 
-          style: GoogleFonts.teko(color: Colors.white, fontSize: 28)),
+        title: const Text("PANEL DE CONTROL",
+            style: TextStyle(
+                fontFamily: 'Teko', color: Colors.white, fontSize: 28)),
         centerTitle: true,
       ),
-      
       body: Container(
+        // Renderizado del fondo corporativo con filtro de oscurecimiento
         decoration: BoxDecoration(
           image: DecorationImage(
             image: const AssetImage('assets/images/fondo_bfr.png'),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
-              Colors.black.withAlpha(180), 
+              Colors.black.withAlpha(180),
               BlendMode.darken,
             ),
           ),
         ),
-        
+
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                
-                // CABECERA
-                Text("GESTIÓN GLOBAL", textAlign: TextAlign.center,
-                  style: GoogleFonts.teko(fontSize: 40, fontWeight: FontWeight.bold, color: primaryColor)),
-                Text("ADMINISTRACIÓN DEL SISTEMA", textAlign: TextAlign.center,
-                  style: GoogleFonts.teko(fontSize: 22, color: Colors.white70)),
+                // --- CABECERA DE LA VISTA ---
+                Text("GESTIÓN GLOBAL",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'Teko',
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor)),
+                const Text("ADMINISTRACIÓN DEL SISTEMA",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'Teko',
+                        fontSize: 22,
+                        color: Colors.white70)),
 
                 const SizedBox(height: 50),
 
-                // LISTA VERTICAL DE BOTONES
-                // Al usar Column con crossAxisAlignment.stretch, ocupan todo el ancho.
-                
-                // 1. MATERIALES (El más importante ahora)
+                // --- MÓDULOS DE ADMINISTRACIÓN (Mapeo de Rutas) ---
+
+                // 1. Módulo de Materiales
                 _buildAdminButton(
-                  icon: Icons.construction, 
+                  icon: Icons.construction,
                   title: "GESTIONAR MATERIALES",
                   subtitle: "Añadir o eliminar equipamiento del club",
                   color: Colors.cyanAccent,
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const MaterialsAdminScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const MaterialsAdminScreen()),
                     );
                   },
                 ),
 
                 const SizedBox(height: 20),
 
-                // 2. USUARIOS
-                _buildAdminButton(
-                  icon: Icons.group,
-                  title: "GESTIONAR USUARIOS",
-                  subtitle: "Ver usuarios registrados y baneos",
-                  color: Colors.orangeAccent,
-                  onTap: () {
-                    debugPrint("Ir a gestión de usuarios");
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // 3. CÓDIGOS DE INVITACIÓN
+                // 2. Módulo de Códigos de Invitación
                 _buildAdminButton(
                   icon: Icons.vpn_key,
                   title: "CÓDIGOS DE ACCESO",
                   subtitle: "Crear claves para nuevos miembros",
                   color: Colors.purpleAccent,
                   onTap: () {
-                    // NAVEGACIÓN A LA PANTALLA DE CÓDIGOS
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const InviteCodesScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const InviteCodesScreen()),
                     );
                   },
                 ),
-                
+
                 const Spacer(),
-                
-                // Marca de agua
+
+                // Sello o marca de agua inferior para equilibrar el diseño
                 const Center(
                   child: Icon(Icons.security, size: 40, color: Colors.white10),
                 ),
@@ -112,22 +116,30 @@ class AdminScreen extends StatelessWidget {
     );
   }
 
-  // WIDGET AUXILIAR: BOTÓN ADMIN ANCHO
-  // He rediseñado esto para que sea una fila (Row) en lugar de una columna.
-  Widget _buildAdminButton({
-    required IconData icon, 
-    required String title, 
-    required String subtitle,
-    required Color color, 
-    required VoidCallback onTap
-  }) {
+  /// Método Factoría Privado: _buildAdminButton
+  ///
+  /// Renderiza un botón estandarizado para las opciones del panel de control
+  /// aplicando efectos de 'Glassmorphism' (Transparencias y desenfoques simulados).
+  ///
+  /// Entradas:
+  /// - [icon]: Iconografía representativa del módulo.
+  /// - [title]: Texto principal.
+  /// - [subtitle]: Descripción secundaria.
+  /// - [color]: Color de acento para la tarjeta (Bordes e iconos).
+  /// - [onTap]: Función de tipo callback (VoidCallback) que ejecuta la navegación.
+  Widget _buildAdminButton(
+      {required IconData icon,
+      required String title,
+      required String subtitle,
+      required Color color,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20), // Fondo Cristal
+          color: Colors.white.withAlpha(20), // Fondo cristalino
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withAlpha(100), width: 1),
           boxShadow: [
@@ -140,7 +152,7 @@ class AdminScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icono a la izquierda con fondo tintado
+            // Icono destacado con contenedor tintado
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -150,17 +162,18 @@ class AdminScreen extends StatelessWidget {
               child: Icon(icon, size: 32, color: color),
             ),
             const SizedBox(width: 20),
-            
-            // Textos en el centro
+
+            // Cuerpo de texto (Título y subtítulo)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.teko(
-                      fontSize: 24, 
-                      fontWeight: FontWeight.bold, 
+                    style: const TextStyle(
+                      fontFamily: 'Teko',
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
                       height: 1.0,
                     ),
@@ -176,9 +189,10 @@ class AdminScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
-            // Flecha a la derecha
-            Icon(Icons.arrow_forward_ios, color: color.withAlpha(150), size: 18),
+
+            // Indicador visual de interacción (Chevron)
+            Icon(Icons.arrow_forward_ios,
+                color: color.withAlpha(150), size: 18),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
 name: be_fit_real
-description: "A new Flutter project."
+description: "Plataforma de entrenamiento inteligente basada en IA y Calistenia."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -7,31 +7,37 @@ environment:
   sdk: '>=3.2.0 <4.0.0'
 
 dependencies:
-  cloud_firestore: ^6.1.2
-  firebase_auth: ^6.1.4
-  firebase_core: ^4.4.0
+  # --- CORE & FIREBASE ---
   flutter:
     sdk: flutter
-  # Versión compatible que no da problemas
-  flutter_dotenv: ^6.0.0
-  flutter_markdown: ^0.7.7+1
-  google_fonts: ^6.2.1
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_firestore: ^6.1.2
+
+  # --- INTELIGENCIA ARTIFICIAL & FORMATO ---
   google_generative_ai: ^0.4.7
-  shared_preferences: ^2.5.5
+  flutter_markdown: ^0.7.7+1
+
+  # --- UTILIDADES & PERSISTENCIA ---
+  flutter_dotenv: ^6.0.0      # Gestión segura de API Keys
+  shared_preferences: ^2.5.5  # Persistencia local (Onboarding)
+  google_fonts: ^6.2.1        # Fallback de tipografías
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.13.1 # Automatización de branding
 
 flutter:
   uses-material-design: true
 
-  # 🟢 IMPORTANTE: La indentación exacta es clave aquí
+  # Registro de recursos estáticos del proyecto
   assets:
     - assets/images/
     - .env
+
+  # Configuración de tipografía local (Soporte Offline Total)
   fonts:
     - family: Teko
       fonts:
@@ -39,10 +45,11 @@ flutter:
         - asset: assets/fonts/Teko-Bold.ttf
           weight: 700
 
+# Configuración del generador de iconos de escritorio/móvil
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo_con_margen.png" # <--- Tu ruta al logo
-  min_sdk_android: 21 # Importante para evitar errores
-  adaptive_icon_background: "#1E1E1E" # Color de fondo (Gris oscuro corporativo)
-  adaptive_icon_foreground: "assets/images/logo_con_margen.png" # El logo en sí
+  image_path: "assets/images/logo_con_margen.png"
+  min_sdk_android: 21 
+  adaptive_icon_background: "#1E1E1E" # Color corporativo oscuro
+  adaptive_icon_foreground: "assets/images/logo_con_margen.png"
