@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart'; // Necesario para debugPrint
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
