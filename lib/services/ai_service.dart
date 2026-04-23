@@ -67,9 +67,15 @@ class AIService {
       final response = await model.generateContent([Content.text(prompt)]);
       return response.text ?? "Error: La IA no generó contenido.";
     } catch (e) {
-      // Sustitución de print() por debugPrint() para evitar logs residuales en Producción (Release)
-      debugPrint("Excepción en capa de IA (AIService): $e");
-      return "Error de conexión con el servicio de IA. Comprueba tu conexión a internet.";
+      final errorString = e.toString();
+        
+        // Si el error es por saturación de Google (503)
+        if (errorString.contains('503') || errorString.contains('high demand')) {
+          return "Los servidores de la IA están muy concurridos en este momento. Por favor, espera unos segundos y vuelve a pulsar el botón.";
+        }
+        
+        // Si el error es de red genérico (el móvil no tiene Wifi/Datos)
+        return "Error de conexión con el servicio de IA. Comprueba tu conexión a internet.";
     }
   }
 }
